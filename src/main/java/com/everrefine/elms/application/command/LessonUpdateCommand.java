@@ -1,6 +1,7 @@
 package com.everrefine.elms.application.command;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
+import java.util.List;
 import lombok.Data;
 
 /** レッスン更新用のコマンド。 */
@@ -11,6 +12,7 @@ public class LessonUpdateCommand {
   private final String title;
   private final String content;
   private final String videoUrl;
+  private final List<String> tags;
 
   /**
    * Lessonエンティティに変換する。

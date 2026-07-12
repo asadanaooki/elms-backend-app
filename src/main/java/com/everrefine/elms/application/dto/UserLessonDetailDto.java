@@ -26,7 +26,17 @@ public class UserLessonDetailDto extends BaseLessonDto {
       LocalDateTime createdAt,
       LocalDateTime updatedAt,
       boolean lessonCompleted) {
-    super(id, lessonGroupId, courseId, lessonOrder, title, content, videoUrl, createdAt, updatedAt);
+    super(
+        id,
+        lessonGroupId,
+        courseId,
+        lessonOrder,
+        title,
+        content,
+        videoUrl,
+        null,
+        createdAt,
+        updatedAt);
     this.lessonCompleted = lessonCompleted;
   }
 
