@@ -12,7 +12,6 @@ import com.everrefine.elms.application.dto.LessonWithCourseAndLessonGroupDto;
 import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.LessonTag;
-import com.everrefine.elms.domain.model.LessonTag.LessonTagId;
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
@@ -27,7 +26,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -311,16 +309,11 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
 
     List<LessonTag> lessonTagsToCreate =
         createdTags.stream()
-            .map(
-                t ->
-                    new LessonTag(
-                        new LessonTagId(lessonId, t.getId()),
-                        LocalDateTime.now(),
-                        LocalDateTime.now()))
+            .map(t -> LessonTag.create(lessonId, t.getId()))
             .toList();
     lessonTagRepository.saveAll(lessonTagsToCreate);
 
-    return toTagDtos(normalizedTags);
+    return toTagDtos(createdTags);
   }
 
   private List<TagDto> toTagDtos(List<Tag> tags) {

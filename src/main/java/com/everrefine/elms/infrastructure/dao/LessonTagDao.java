@@ -1,7 +1,6 @@
 package com.everrefine.elms.infrastructure.dao;
 
 import com.everrefine.elms.domain.model.LessonTag;
-import com.everrefine.elms.domain.model.LessonTag.LessonTagId;
 import java.time.LocalDateTime;
 import org.springframework.data.jdbc.repository.query.Modifying;
 import org.springframework.data.jdbc.repository.query.Query;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 /** レッスンタグのDAOインターフェース。 */
 @Repository
-public interface LessonTagDao extends CrudRepository<LessonTag, LessonTagId> {
+public interface LessonTagDao extends CrudRepository<LessonTag, Integer> {
 
   @Modifying
   @Query(

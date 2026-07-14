@@ -68,6 +68,9 @@ public class JdbcConfig extends AbstractJdbcConfiguration {
     converters.add(new LessonContentToStringConverter());
     converters.add(new StringToLessonContentConverter());
 
+    converters.add(new TagNameToStringConverter());
+    converters.add(new StringToTagNameConverter());
+    
     return new JdbcCustomConversions(converters);
   }
 
@@ -313,7 +316,7 @@ public class JdbcConfig extends AbstractJdbcConfiguration {
     }
   }
 
-  /** タグ名をStringに変換するコンバーター。 */
+  /** Name(Tag)をStringに変換するコンバーター。 */
   @WritingConverter
   static class TagNameToStringConverter
       implements Converter<com.everrefine.elms.domain.model.tag.Name, String> {
@@ -323,7 +326,7 @@ public class JdbcConfig extends AbstractJdbcConfiguration {
     }
   }
 
-  /** Stringをタグ名に変換するコンバーター。 */
+  /** StringをName(Tag)に変換するコンバーター。 */
   @ReadingConverter
   static class StringToTagNameConverter
       implements Converter<String, com.everrefine.elms.domain.model.tag.Name> {
