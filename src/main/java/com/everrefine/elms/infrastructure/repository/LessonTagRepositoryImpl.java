@@ -20,7 +20,7 @@ public class LessonTagRepositoryImpl implements LessonTagRepository {
   }
 
   @Override
-  public void deleteByLessonId(Integer lessonId) {
-    lessonTagDao.deleteByLessonId(lessonId);
+  public void deleteAllByLessonId(Integer lessonId) {
+    lessonTagDao.deleteAllByLessonId(lessonId);
   }
 }

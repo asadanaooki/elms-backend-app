@@ -9,7 +9,7 @@ public interface LessonTagRepository {
   /**
    * レッスンタグを保存する。
    *
-   * @param userLesson 保存するレッスンタグ
+   * @param lessonTags 保存するレッスンタグ
    */
   void saveAll(List<LessonTag> lessonTags);
 
@@ -18,5 +18,5 @@ public interface LessonTagRepository {
    *
    * @param lessonId レッスンID
    */
-  void deleteByLessonId(Integer lessonId);
+  void deleteAllByLessonId(Integer lessonId);
 }

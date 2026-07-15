@@ -4,6 +4,7 @@ import com.everrefine.elms.application.command.LessonUpdateCommand;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.Collections;
 import java.util.List;
@@ -29,9 +30,9 @@ public class LessonUpdateRequest {
   @URL
   private String videoUrl;
 
-  @Schema(description = "タグ一覧", example = "Git, 入門")
+  @Schema(description = "タグ一覧")
   @Size(max = 50, message = "登録できるタグの数は50個以内です。")
-  private List<@Valid TagRequest> tags;
+  private List<@NotNull @Valid LessonTagRequest> tags;
 
   /**
    * Commandオブジェクトに変換する。
@@ -41,7 +42,7 @@ public class LessonUpdateRequest {
    */
   public LessonUpdateCommand toCommand(Integer lessonId) {
 
-    return new LessonUpdateCommand(lessonId, title, content, videoUrl, toTagNames());
+    return new LessonUpdateCommand(lessonId, title, content, videoUrl, extractTagNames());
   }
 
   /**
@@ -49,10 +50,10 @@ public class LessonUpdateRequest {
    *
    * @return タグ名一覧
    */
-  private List<String> toTagNames() {
+  private List<String> extractTagNames() {
     if (CollectionUtils.isEmpty(tags)) {
       return Collections.emptyList();
     }
-    return tags.stream().map(TagRequest::getName).toList();
+    return tags.stream().map(LessonTagRequest::getName).toList();
   }
 }

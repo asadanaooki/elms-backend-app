@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import lombok.Getter;
 
 /** ユーザーレッスン詳細。 */
@@ -34,7 +35,7 @@ public class UserLessonDetailDto extends BaseLessonDto {
         title,
         content,
         videoUrl,
-        null,
+        Collections.emptyList(),
         createdAt,
         updatedAt);
     this.lessonCompleted = lessonCompleted;

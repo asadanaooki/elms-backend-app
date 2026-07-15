@@ -33,8 +33,8 @@ public abstract class BaseLessonDto {
   @Schema(description = "動画URL", example = "https://example.com/videos/lesson1.mp4")
   private final String videoUrl;
 
-  @Schema(description = "タグ名一覧", example = "Git, 入門")
-  private List<TagDto> tags;
+  @Schema(description = "タグ名一覧")
+  private final List<TagDto> tags;
 
   @Schema(description = "登録日時", example = "2024-01-01T09:00:00")
   private final LocalDateTime createdAt;

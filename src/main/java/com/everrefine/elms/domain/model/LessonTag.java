@@ -1,13 +1,11 @@
 package com.everrefine.elms.domain.model;
 
 import java.time.LocalDateTime;
-
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
-
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 /** レッスンタグのエンティティ。 */
 @Getter
@@ -16,10 +14,10 @@ import lombok.Getter;
 public class LessonTag {
 
   @Id private final Integer id;
-  
+
   @Column("lesson_id")
   private Integer lessonId;
-  
+
   @Column("tag_id")
   private Integer tagId;
 

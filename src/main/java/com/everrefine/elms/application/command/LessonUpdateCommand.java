@@ -12,7 +12,7 @@ public class LessonUpdateCommand {
   private final String title;
   private final String content;
   private final String videoUrl;
-  private final List<String> tags;
+  private final List<String> tagNames;
 
   /**
    * Lessonエンティティに変換する。

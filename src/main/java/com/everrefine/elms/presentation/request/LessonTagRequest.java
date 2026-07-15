@@ -7,7 +7,7 @@ import lombok.Data;
 
 /** レッスンのタグに関するクラス。 */
 @Data
-public class TagRequest {
+public class LessonTagRequest {
 
   @Schema(description = "タグ名", example = "Git")
   @NotBlank

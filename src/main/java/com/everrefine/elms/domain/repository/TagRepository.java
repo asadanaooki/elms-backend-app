@@ -8,12 +8,11 @@ import java.util.List;
 public interface TagRepository {
 
   /**
-   * タグを作成する。
+   * 複数のタグを一括作成する。
    *
-   * @param course 作成するタグ
-   * @return 登録タグ一覧(タグIDを含む)
+   * @param tags 作成するタグ一覧
    */
-  List<Tag> createTags(List<Tag> tags);
+  void createTags(List<Tag> tags);
 
   /**
    * 指定したタグが存在するか確認する。
@@ -21,4 +20,12 @@ public interface TagRepository {
    * @param name タグ名
    */
   boolean existsTagByName(Name name);
+
+  /**
+   * 指定したタグ名に一致するタグ一覧を取得する。
+   *
+   * @param names タグ名一覧
+   * @return 全タグ一覧
+   */
+  List<Tag> findAllTagsByNames(List<Name> names);
 }

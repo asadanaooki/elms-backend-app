@@ -70,7 +70,7 @@ public class JdbcConfig extends AbstractJdbcConfiguration {
 
     converters.add(new TagNameToStringConverter());
     converters.add(new StringToTagNameConverter());
-    
+
     return new JdbcCustomConversions(converters);
   }
 

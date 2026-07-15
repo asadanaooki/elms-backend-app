@@ -152,9 +152,9 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson updatedLesson =
         lessonRepository.updateLesson(lessonUpdateCommand.toLesson(currentLesson));
 
-    List<TagDto> responseTags = replaceLessonTags(lessonId, lessonUpdateCommand);
+    List<TagDto> associatedTagDtos = replaceLessonTags(lessonId, lessonUpdateCommand.getTagNames());
 
-    return LessonDto.from(updatedLesson, responseTags);
+    return LessonDto.from(updatedLesson, associatedTagDtos);
   }
 
   @Override
@@ -281,39 +281,51 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     return new ByteArrayResource(baos.toByteArray());
   }
 
-  private List<TagDto> replaceLessonTags(
-      Integer lessonId, LessonUpdateCommand lessonUpdateCommand) {
-    LinkedHashMap<String, Tag> map = new LinkedHashMap<String, Tag>();
-    lessonUpdateCommand.getTags().stream()
+  private List<TagDto> replaceLessonTags(Integer lessonId, List<String> requestedTagNames) {
+    LinkedHashMap<String, Tag> uniqueTagsByName = new LinkedHashMap<String, Tag>();
+    requestedTagNames.stream()
         .map(Tag::create)
-        .forEach(
-            t -> {
-              if (t.getName().getValue().isBlank()) {
-                return;
-              }
-              map.putIfAbsent(t.getName().getValue(), t);
-            });
+        .forEach(t -> uniqueTagsByName.putIfAbsent(t.getName().getValue(), t));
 
-    List<Tag> normalizedTags = new ArrayList<Tag>(map.values());
+    List<Tag> normalizedTags = new ArrayList<Tag>(uniqueTagsByName.values());
     if (normalizedTags.isEmpty()) {
-      lessonTagRepository.deleteByLessonId(lessonId);
+      lessonTagRepository.deleteAllByLessonId(lessonId);
 
       return toTagDtos(normalizedTags);
     }
-    // 未登録のタグを抽出する
-    List<Tag> tagsToCreate =
+
+    // 未登録のタグを抽出し、登録する
+    List<Tag> missingTags =
         normalizedTags.stream().filter(t -> !tagRepository.existsTagByName(t.getName())).toList();
-    List<Tag> createdTags = tagRepository.createTags(tagsToCreate);
+    tagRepository.createTags(missingTags);
 
-    lessonTagRepository.deleteByLessonId(lessonId);
+    // 正規化後のタグ名に対応するタグを、既存タグを含めて取得（レッスンタグの洗い替えのために使用）
+    List<Tag> tagsInRequestOrder = findTagsInRequestOrder(normalizedTags);
 
-    List<LessonTag> lessonTagsToCreate =
-        createdTags.stream()
-            .map(t -> LessonTag.create(lessonId, t.getId()))
-            .toList();
-    lessonTagRepository.saveAll(lessonTagsToCreate);
+    // レッスンタグの洗い替え
+    lessonTagRepository.deleteAllByLessonId(lessonId);
+    List<LessonTag> lessonTagAssociations =
+        tagsInRequestOrder.stream().map(t -> LessonTag.create(lessonId, t.getId())).toList();
+    lessonTagRepository.saveAll(lessonTagAssociations);
 
-    return toTagDtos(createdTags);
+    return toTagDtos(tagsInRequestOrder);
+  }
+
+  private List<Tag> findTagsInRequestOrder(List<Tag> normalizedTags) {
+    List<Tag> persistedTags =
+        tagRepository.findAllTagsByNames(normalizedTags.stream().map(Tag::getName).toList());
+    List<Tag> tagsInRequestOrder = new ArrayList<Tag>();
+
+    for (Tag tag : normalizedTags) {
+      Tag persistedTag =
+          persistedTags.stream()
+              .filter(p -> p.getName().equals(tag.getName()))
+              .findFirst()
+              .orElseThrow();
+      tagsInRequestOrder.add(persistedTag);
+    }
+
+    return tagsInRequestOrder;
   }
 
   private List<TagDto> toTagDtos(List<Tag> tags) {
