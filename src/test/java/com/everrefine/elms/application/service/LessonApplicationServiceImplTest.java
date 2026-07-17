@@ -1,6 +1,7 @@
 package com.everrefine.elms.application.service;
 
 import static com.everrefine.elms.domain.model.user.Password.encryptAndCreate;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -14,18 +15,24 @@ import com.everrefine.elms.application.command.LessonUpdateCommand;
 import com.everrefine.elms.application.dto.CourseLessonsDto;
 import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.LessonPageDto;
+import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.model.LessonTag;
+import com.everrefine.elms.domain.model.tag.Tag;
 import com.everrefine.elms.presentation.request.LessonCreateRequest;
 import com.everrefine.elms.presentation.request.LessonOrderUpdateRequest;
 import com.everrefine.elms.presentation.request.LessonSearchRequest;
+import com.everrefine.elms.presentation.request.LessonTagRequest;
 import com.everrefine.elms.presentation.request.LessonUpdateRequest;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,9 +76,9 @@ public class LessonApplicationServiceImplTest {
   public Integer createCourse(BigDecimal courseOrder, String title, String description) {
     jdbcTemplate.update(
         """
-            INSERT INTO courses (course_order, title, description, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?)
-            """,
+                INSERT INTO courses (course_order, title, description, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
         courseOrder,
         title,
         description,
@@ -85,9 +92,9 @@ public class LessonApplicationServiceImplTest {
   public Integer createLessonGroup(Integer courseId, BigDecimal lessonGroupOrder, String title) {
     jdbcTemplate.update(
         """
-            INSERT INTO lesson_groups (course_id, lesson_group_order, title, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?)
-            """,
+                INSERT INTO lesson_groups (course_id, lesson_group_order, title, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
         courseId,
         lessonGroupOrder,
         title,
@@ -107,10 +114,10 @@ public class LessonApplicationServiceImplTest {
       String videoRrl) {
     jdbcTemplate.update(
         """
-            INSERT INTO lessons (
-            lesson_group_id, course_id, lesson_order, title, content, video_url, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
+                INSERT INTO lessons (
+                lesson_group_id, course_id, lesson_order, title, content, video_url, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
         lessonGroupId,
         courseId,
         lessonOrder,
@@ -128,17 +135,17 @@ public class LessonApplicationServiceImplTest {
       String emailAddress, String password, String realName, String userName, String userRole) {
     jdbcTemplate.update(
         """
-            INSERT INTO users (
-                 email_address,
-                 password,
-                 real_name,
-                 user_name,
-                 thumbnail_url,
-                 user_role,
-                 created_at,
-                 updated_at
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-            """,
+                INSERT INTO users (
+                     email_address,
+                     password,
+                     real_name,
+                     user_name,
+                     thumbnail_url,
+                     user_role,
+                     created_at,
+                     updated_at
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                """,
         emailAddress,
         encryptAndCreate(password).getValue(),
         realName,
@@ -149,6 +156,34 @@ public class LessonApplicationServiceImplTest {
         LocalDateTime.now());
     return jdbcTemplate.queryForObject(
         "SELECT id FROM users WHERE email_address = ?", Integer.class, emailAddress);
+  }
+
+  // Tagにデータを挿入しtagIdを取得する
+  public Integer createTag(String name) {
+    jdbcTemplate.update(
+        """
+                INSERT INTO tags (
+                name, created_at, updated_at
+                ) VALUES (?, ?, ?)
+                """,
+        name,
+        LocalDateTime.now(),
+        LocalDateTime.now());
+    return jdbcTemplate.queryForObject("SELECT id FROM tags WHERE name = ?", Integer.class, name);
+  }
+
+  // LessonTagにデータを挿入する
+  public void createLessonTag(Integer lessonId, Integer tagId) {
+    jdbcTemplate.update(
+        """
+                INSERT INTO lesson_tags (
+                lesson_id, tag_id, created_at, updated_at
+                ) VALUES (?, ?, ?, ?)
+                """,
+        lessonId,
+        tagId,
+        LocalDateTime.now(),
+        LocalDateTime.now());
   }
 
   @Test
@@ -333,11 +368,20 @@ public class LessonApplicationServiceImplTest {
             "元のタイトル",
             "元の説明",
             "https://example.com/old-video.mp4");
+    Integer tagId = createTag("Java");
+    createLessonTag(lessonId, tagId);
 
     LessonUpdateRequest request = new LessonUpdateRequest();
     request.setTitle("更新後タイトル");
     request.setContent("更新後説明");
     request.setVideoUrl("https://example.com/updated-video.mp4");
+    LessonTagRequest tagFirst = new LessonTagRequest();
+    tagFirst.setName("Spring");
+    LessonTagRequest tagSecond = new LessonTagRequest();
+    tagSecond.setName("Java");
+    LessonTagRequest tagThird = new LessonTagRequest();
+    tagThird.setName("中級編");
+    request.setTags(List.of(tagFirst, tagSecond, tagThird));
     LessonUpdateCommand command = request.toCommand(lessonId);
 
     // Act
@@ -349,6 +393,9 @@ public class LessonApplicationServiceImplTest {
     assertEquals("更新後タイトル", result.getTitle());
     assertEquals("更新後説明", result.getContent());
     assertEquals("https://example.com/updated-video.mp4", result.getVideoUrl());
+    assertTrue(result.getTags().stream().allMatch(t -> t.getId() != null));
+    assertEquals(
+        List.of("Spring", "Java", "中級編"), result.getTags().stream().map(TagDto::getName).toList());
 
     // DBが更新されていることを確認
     String updatedTitle =
@@ -359,6 +406,18 @@ public class LessonApplicationServiceImplTest {
         jdbcTemplate.queryForObject(
             "SELECT content FROM lessons WHERE id = ?", String.class, lessonId);
     assertEquals("更新後説明", updatedContent);
+    List<String> updatedTags =
+        jdbcTemplate.queryForList("SELECT name FROM tags order by id", String.class);
+    assertEquals(3, updatedTags.size());
+    assertEquals(List.of("Java", "Spring", "中級編"), updatedTags);
+
+    List<Integer> tagIds =
+        jdbcTemplate.queryForList(
+            "SELECT tag_id FROM lesson_tags WHERE lesson_id = ? order by tag_id",
+            Integer.class,
+            lessonId);
+    assertEquals(3, tagIds.size());
+    assertEquals(result.getTags().stream().map(TagDto::getId).sorted().toList(), tagIds);
   }
 
   @Test
@@ -388,6 +447,89 @@ public class LessonApplicationServiceImplTest {
     assertEquals("タイトルのみ更新", result.getTitle());
     assertEquals("元の説明", result.getContent()); // 元の値が保持される
     assertEquals("https://example.com/old-video.mp4", result.getVideoUrl()); // 元の値が保持される
+  }
+
+  @Test
+  void 正常系_登録するタグが存在しない場合は既存のタグ紐づけが削除されること() {
+    // Arrange - 既存レッスンを準備（IDは自動生成）
+    Integer courseId = createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+    Integer lessonGroupId = createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+    Integer lessonId =
+        createLesson(
+            lessonGroupId,
+            courseId,
+            new BigDecimal("1"),
+            "元のタイトル",
+            "元の説明",
+            "https://example.com/old-video.mp4");
+    Integer tagId = createTag("Java");
+    createLessonTag(lessonId, tagId);
+
+    LessonUpdateRequest request = new LessonUpdateRequest();
+    request.setTitle("更新後タイトル");
+    request.setContent("更新後説明");
+    request.setVideoUrl("https://example.com/updated-video.mp4");
+    LessonUpdateCommand command = request.toCommand(lessonId);
+
+    // Act
+    LessonDto result = lessonApplicationService.updateLesson(command);
+
+    // Assert
+    assertNotNull(result);
+    assertTrue(result.getTags().isEmpty());
+
+    // タグに関するデータが変わっていないことを確認
+    List<Tag> tagList = jdbcTemplate.query("SELECT * FROM tags", new DataClassRowMapper(Tag.class));
+    assertEquals(1, tagList.size());
+    assertEquals(tagId, tagList.get(0).getId());
+    assertEquals("Java", tagList.get(0).getName().getValue());
+
+    List<LessonTag> lessonTagList =
+        jdbcTemplate.query("SELECT * FROM lesson_tags", new DataClassRowMapper(LessonTag.class));
+    assertEquals(0, lessonTagList.size());
+  }
+
+  @Test
+  void 正常系_登録するタグが正規化されること() {
+    // Arrange - 既存レッスンを準備（IDは自動生成）
+    Integer courseId = createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+    Integer lessonGroupId = createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+    Integer lessonId =
+        createLesson(
+            lessonGroupId,
+            courseId,
+            new BigDecimal("1"),
+            "元のタイトル",
+            "元の説明",
+            "https://example.com/old-video.mp4");
+
+    LessonUpdateRequest request = new LessonUpdateRequest();
+    request.setTitle("更新後タイトル");
+    request.setContent("更新後説明");
+    request.setVideoUrl("https://example.com/updated-video.mp4");
+    LessonTagRequest tag1 = new LessonTagRequest();
+    tag1.setName("Java");
+    LessonTagRequest tag2 = new LessonTagRequest();
+    tag2.setName(" Spring　 ");
+    LessonTagRequest tag3 = new LessonTagRequest();
+    tag3.setName("入門");
+    LessonTagRequest tag4 = new LessonTagRequest();
+    tag4.setName("入門");
+    request.setTags(List.of(tag1, tag2, tag3, tag4));
+    String[] expectedTags = new String[] {"Java", "Spring", "入門"};
+    LessonUpdateCommand command = request.toCommand(lessonId);
+    // Act
+    LessonDto result = lessonApplicationService.updateLesson(command);
+
+    // Assert
+    assertArrayEquals(expectedTags, result.getTags().stream().map(TagDto::getName).toArray());
+
+    // DBが更新されていることを確認
+    List<String> updatedTags =
+        jdbcTemplate.queryForList("SELECT name FROM tags ORDER BY id", String.class);
+    assertEquals(3, updatedTags.size());
+
+    assertArrayEquals(expectedTags, updatedTags.toArray());
   }
 
   @Test

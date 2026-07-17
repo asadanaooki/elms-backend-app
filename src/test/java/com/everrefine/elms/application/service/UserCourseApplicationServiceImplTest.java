@@ -1,7 +1,10 @@
 package com.everrefine.elms.application.service;
 
 import static com.everrefine.elms.domain.model.user.Password.encryptAndCreate;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.everrefine.elms.application.dto.UserCourseDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;

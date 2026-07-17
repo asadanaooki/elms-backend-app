@@ -3,6 +3,7 @@ package com.everrefine.elms.application.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -31,6 +32,9 @@ public abstract class BaseLessonDto {
 
   @Schema(description = "動画URL", example = "https://example.com/videos/lesson1.mp4")
   private final String videoUrl;
+
+  @Schema(description = "タグ一覧")
+  private final List<TagDto> tags;
 
   @Schema(description = "登録日時", example = "2024-01-01T09:00:00")
   private final LocalDateTime createdAt;

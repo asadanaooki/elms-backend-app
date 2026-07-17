@@ -4,12 +4,22 @@ import com.everrefine.elms.application.command.LessonCreateCommand;
 import com.everrefine.elms.application.command.LessonOrderUpdateCommand;
 import com.everrefine.elms.application.command.LessonSearchCommand;
 import com.everrefine.elms.application.command.LessonUpdateCommand;
-import com.everrefine.elms.application.dto.*;
+import com.everrefine.elms.application.dto.CourseLessonsDto;
+import com.everrefine.elms.application.dto.LessonDto;
+import com.everrefine.elms.application.dto.LessonGroupDto;
+import com.everrefine.elms.application.dto.LessonPageDto;
+import com.everrefine.elms.application.dto.LessonWithCourseAndLessonGroupDto;
+import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.model.LessonTag;
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
+import com.everrefine.elms.domain.model.tag.Tag;
+import com.everrefine.elms.domain.model.tag.TagName;
 import com.everrefine.elms.domain.repository.LessonRepository;
+import com.everrefine.elms.domain.repository.LessonTagRepository;
+import com.everrefine.elms.domain.repository.TagRepository;
 import com.everrefine.elms.domain.service.LessonDomainService;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -18,6 +28,8 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -34,7 +46,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class LessonApplicationServiceImpl implements LessonApplicationService {
 
   private final LessonRepository lessonRepository;
+
   private final LessonDomainService lessonDomainService;
+
+  private final LessonTagRepository lessonTagRepository;
+
+  private final TagRepository tagRepository;
 
   /**
    * CSV出力用に値をエスケープする。
@@ -61,7 +78,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   @Transactional(readOnly = true)
   public LessonDto findLessonById(Integer courseId, Integer lessonGroupId, Integer lessonId) {
     Lesson lesson = findLessonBelongingToCourseAndGroupOrThrow(lessonId, courseId, lessonGroupId);
-    return LessonDto.from(lesson);
+    return LessonDto.from(lesson, Collections.emptyList());
   }
 
   @Override
@@ -70,7 +87,8 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     List<Lesson> lessons = lessonRepository.findLessons(lessonSearchCommand.toCriteria());
     int totalSize = lessonRepository.countLessons(lessonSearchCommand.toCriteria());
 
-    List<LessonDto> lessonDtos = lessons.stream().map(LessonDto::from).toList();
+    List<LessonDto> lessonDtos =
+        lessons.stream().map(l -> LessonDto.from(l, Collections.emptyList())).toList();
 
     return LessonPageDto.from(
         lessonDtos, lessonSearchCommand.getPageNum(), lessonSearchCommand.getPageSize(), totalSize);
@@ -124,16 +142,20 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     BigDecimal lessonOrder =
         lessonDomainService.issueLessonOrder(lessonCreateCommand.getLessonGroupId());
     Lesson createdLesson = lessonRepository.createLesson(lessonCreateCommand.toLesson(lessonOrder));
-    return LessonDto.from(createdLesson);
+    return LessonDto.from(createdLesson, Collections.emptyList());
   }
 
   @Override
   @Transactional
   public LessonDto updateLesson(LessonUpdateCommand lessonUpdateCommand) {
-    Lesson currentLesson = findLessonOrThrow(lessonUpdateCommand.getId());
+    Integer lessonId = lessonUpdateCommand.getId();
+    Lesson currentLesson = findLessonOrThrow(lessonId);
     Lesson updatedLesson =
         lessonRepository.updateLesson(lessonUpdateCommand.toLesson(currentLesson));
-    return LessonDto.from(updatedLesson);
+
+    List<TagDto> associatedTagDtos = replaceLessonTags(lessonId, lessonUpdateCommand.getTagNames());
+
+    return LessonDto.from(updatedLesson, associatedTagDtos);
   }
 
   @Override
@@ -199,7 +221,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson updatedLesson = targetLesson.updateOrder(newOrder);
     Lesson savedLesson = lessonRepository.updateLesson(updatedLesson);
 
-    return LessonDto.from(savedLesson);
+    return LessonDto.from(savedLesson, Collections.emptyList());
   }
 
   @Transactional(readOnly = true)
@@ -258,5 +280,53 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
       throw new RuntimeException("CSVファイルの作成に失敗しました", e);
     }
     return new ByteArrayResource(baos.toByteArray());
+  }
+
+  private List<TagDto> replaceLessonTags(Integer lessonId, List<String> requestedTagNames) {
+    Map<String, Tag> uniqueTagsByName = new LinkedHashMap<>();
+    requestedTagNames.stream()
+        .map(Tag::create)
+        .forEach(t -> uniqueTagsByName.putIfAbsent(t.getName().getValue(), t));
+
+    List<Tag> normalizedTags = new ArrayList<Tag>(uniqueTagsByName.values());
+    if (normalizedTags.isEmpty()) {
+      lessonTagRepository.deleteAllByLessonId(lessonId);
+
+      return List.of();
+    }
+
+    // 正規化済みのタグと既存タグをマージし、保存する
+    List<Tag> existingTags =
+        tagRepository.findAllTagsByNames(normalizedTags.stream().map(Tag::getName).toList());
+    Map<TagName, Tag> existingTagMap =
+        existingTags.stream().collect(Collectors.toMap(Tag::getName, Function.identity()));
+    List<Tag> mergedTags =
+        normalizedTags.stream().map(t -> existingTagMap.getOrDefault(t.getName(), t)).toList();
+    tagRepository.saveTags(mergedTags);
+
+    // 正規化後のタグ名に対応するタグを、既存タグを含めて取得（レッスンタグの洗い替えのために使用）
+    List<Tag> tagsInRequestOrder = findTagsInRequestOrder(normalizedTags);
+
+    // レッスンタグの洗い替え
+    lessonTagRepository.deleteAllByLessonId(lessonId);
+    List<LessonTag> lessonTagAssociations =
+        tagsInRequestOrder.stream().map(t -> LessonTag.create(lessonId, t.getId())).toList();
+    lessonTagRepository.saveAll(lessonTagAssociations);
+
+    return toTagDtos(tagsInRequestOrder);
+  }
+
+  private List<Tag> findTagsInRequestOrder(List<Tag> normalizedTags) {
+    Map<TagName, Tag> persistedTagsByName =
+        tagRepository
+            .findAllTagsByNames(normalizedTags.stream().map(Tag::getName).toList())
+            .stream()
+            .collect(Collectors.toMap(Tag::getName, Function.identity()));
+
+    return normalizedTags.stream().map(t -> persistedTagsByName.get(t.getName())).toList();
+  }
+
+  private List<TagDto> toTagDtos(List<Tag> tags) {
+    return tags.stream().map(t -> new TagDto(t.getId(), t.getName().getValue())).toList();
   }
 }

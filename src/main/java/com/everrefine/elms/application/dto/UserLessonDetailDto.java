@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import lombok.Getter;
 
 /** ユーザーレッスン詳細。 */
@@ -26,7 +27,17 @@ public class UserLessonDetailDto extends BaseLessonDto {
       LocalDateTime createdAt,
       LocalDateTime updatedAt,
       boolean lessonCompleted) {
-    super(id, lessonGroupId, courseId, lessonOrder, title, content, videoUrl, createdAt, updatedAt);
+    super(
+        id,
+        lessonGroupId,
+        courseId,
+        lessonOrder,
+        title,
+        content,
+        videoUrl,
+        Collections.emptyList(),
+        createdAt,
+        updatedAt);
     this.lessonCompleted = lessonCompleted;
   }
 
