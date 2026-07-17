@@ -5,7 +5,7 @@ import lombok.Value;
 
 /** タグ名の値オブジェクト。 */
 @Value
-public class Name {
+public class TagName {
 
   // 最大文字数
   private static final int MAX_LENGTH = 255;
@@ -17,7 +17,7 @@ public class Name {
    *
    * @param value タグ名（255文字以内）
    */
-  public Name(String value) {
+  public TagName(String value) {
     if (value == null || value.length() > MAX_LENGTH) {
       throw new InvalidValueException("タグ名は" + MAX_LENGTH + "文字以内で入力してください");
     }

@@ -1,7 +1,7 @@
 package com.everrefine.elms.infrastructure.repository;
 
-import com.everrefine.elms.domain.model.tag.Name;
 import com.everrefine.elms.domain.model.tag.Tag;
+import com.everrefine.elms.domain.model.tag.TagName;
 import com.everrefine.elms.domain.repository.TagRepository;
 import com.everrefine.elms.infrastructure.dao.TagDao;
 import java.util.List;
@@ -16,18 +16,13 @@ public class TagRepositoryImpl implements TagRepository {
   private final TagDao tagDao;
 
   @Override
-  public void createTags(List<Tag> tags) {
+  public void saveTags(List<Tag> tags) {
     tagDao.saveAll(tags);
   }
 
   @Override
-  public boolean existsTagByName(Name name) {
-    return tagDao.existsByName(name.getValue());
-  }
-
-  @Override
-  public List<Tag> findAllTagsByNames(List<Name> names) {
-    List<String> stringNames = names.stream().map(Name::getValue).toList();
-    return tagDao.findAllByNames(stringNames);
+  public List<Tag> findAllTagsByNames(List<TagName> names) {
+    List<String> stringNames = names.stream().map(TagName::getValue).toList();
+    return tagDao.findAllByNameIn(stringNames);
   }
 }

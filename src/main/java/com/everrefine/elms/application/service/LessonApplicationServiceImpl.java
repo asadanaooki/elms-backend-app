@@ -16,6 +16,7 @@ import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
 import com.everrefine.elms.domain.model.tag.Tag;
+import com.everrefine.elms.domain.model.tag.TagName;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.domain.repository.LessonTagRepository;
 import com.everrefine.elms.domain.repository.TagRepository;
@@ -282,7 +283,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   }
 
   private List<TagDto> replaceLessonTags(Integer lessonId, List<String> requestedTagNames) {
-    LinkedHashMap<String, Tag> uniqueTagsByName = new LinkedHashMap<String, Tag>();
+    Map<String, Tag> uniqueTagsByName = new LinkedHashMap<>();
     requestedTagNames.stream()
         .map(Tag::create)
         .forEach(t -> uniqueTagsByName.putIfAbsent(t.getName().getValue(), t));
@@ -291,13 +292,17 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     if (normalizedTags.isEmpty()) {
       lessonTagRepository.deleteAllByLessonId(lessonId);
 
-      return toTagDtos(normalizedTags);
+      return List.of();
     }
 
-    // 未登録のタグを抽出し、登録する
-    List<Tag> missingTags =
-        normalizedTags.stream().filter(t -> !tagRepository.existsTagByName(t.getName())).toList();
-    tagRepository.createTags(missingTags);
+    // 正規化済みのタグと既存タグをマージし、保存する
+    List<Tag> existingTags =
+        tagRepository.findAllTagsByNames(normalizedTags.stream().map(Tag::getName).toList());
+    Map<TagName, Tag> existingTagMap =
+        existingTags.stream().collect(Collectors.toMap(Tag::getName, Function.identity()));
+    List<Tag> mergedTags =
+        normalizedTags.stream().map(t -> existingTagMap.getOrDefault(t.getName(), t)).toList();
+    tagRepository.saveTags(mergedTags);
 
     // 正規化後のタグ名に対応するタグを、既存タグを含めて取得（レッスンタグの洗い替えのために使用）
     List<Tag> tagsInRequestOrder = findTagsInRequestOrder(normalizedTags);
@@ -312,20 +317,13 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   }
 
   private List<Tag> findTagsInRequestOrder(List<Tag> normalizedTags) {
-    List<Tag> persistedTags =
-        tagRepository.findAllTagsByNames(normalizedTags.stream().map(Tag::getName).toList());
-    List<Tag> tagsInRequestOrder = new ArrayList<Tag>();
+    Map<TagName, Tag> persistedTagsByName =
+        tagRepository
+            .findAllTagsByNames(normalizedTags.stream().map(Tag::getName).toList())
+            .stream()
+            .collect(Collectors.toMap(Tag::getName, Function.identity()));
 
-    for (Tag tag : normalizedTags) {
-      Tag persistedTag =
-          persistedTags.stream()
-              .filter(p -> p.getName().equals(tag.getName()))
-              .findFirst()
-              .orElseThrow();
-      tagsInRequestOrder.add(persistedTag);
-    }
-
-    return tagsInRequestOrder;
+    return normalizedTags.stream().map(t -> persistedTagsByName.get(t.getName())).toList();
   }
 
   private List<TagDto> toTagDtos(List<Tag> tags) {
