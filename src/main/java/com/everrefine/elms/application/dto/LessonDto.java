@@ -1,7 +1,7 @@
 package com.everrefine.elms.application.dto;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -33,23 +33,25 @@ public class LessonDto extends BaseLessonDto {
   }
 
   /**
-   * LessonGroupWithLessonからLessonDtoを生成する。
+   * LessonGroupWithLessonAndTagからLessonDtoを生成する。
    *
-   * @param lessonGroupWithLesson レッスングループとレッスンの結合情報
+   * @param LessonGroupWithLessonAndTag レッスングループとレッスンの結合情報
    * @return レッスンDTO
    */
-  public static LessonDto from(LessonGroupWithLesson lessonGroupWithLesson) {
+  public static LessonDto from(LessonGroupWithLessonAndTag lessonGroupWithLessonAndTag) {
     return new LessonDto(
-        lessonGroupWithLesson.getLessonId(),
-        lessonGroupWithLesson.getLessonGroupId(),
-        lessonGroupWithLesson.getCourseId(),
-        lessonGroupWithLesson.getLessonOrder(),
-        lessonGroupWithLesson.getLessonTitle(),
-        lessonGroupWithLesson.getLessonContent(),
-        lessonGroupWithLesson.getLessonVideoUrl(),
-        Collections.emptyList(),
-        lessonGroupWithLesson.getLessonCreatedAt(),
-        lessonGroupWithLesson.getLessonUpdatedAt());
+        lessonGroupWithLessonAndTag.getLessonId(),
+        lessonGroupWithLessonAndTag.getLessonGroupId(),
+        lessonGroupWithLessonAndTag.getCourseId(),
+        lessonGroupWithLessonAndTag.getLessonOrder(),
+        lessonGroupWithLessonAndTag.getLessonTitle(),
+        lessonGroupWithLessonAndTag.getLessonContent(),
+        lessonGroupWithLessonAndTag.getLessonVideoUrl(),
+        lessonGroupWithLessonAndTag.getTags().stream()
+            .map(t -> new TagDto(t.getId(), t.getName().getValue()))
+            .toList(),
+        lessonGroupWithLessonAndTag.getLessonCreatedAt(),
+        lessonGroupWithLessonAndTag.getLessonUpdatedAt());
   }
 
   private LessonDto(

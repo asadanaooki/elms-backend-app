@@ -13,10 +13,11 @@ import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.LessonTag;
 import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
 import com.everrefine.elms.domain.model.tag.Tag;
 import com.everrefine.elms.domain.model.tag.TagName;
+import com.everrefine.elms.domain.repository.LessonGroupRepository;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.domain.repository.LessonTagRepository;
 import com.everrefine.elms.domain.repository.TagRepository;
@@ -52,6 +53,8 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   private final LessonTagRepository lessonTagRepository;
 
   private final TagRepository tagRepository;
+
+  private final LessonGroupRepository lessonGroupRepository;
 
   /**
    * CSV出力用に値をエスケープする。
@@ -127,10 +130,11 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   @Override
   @Transactional(readOnly = true)
   public CourseLessonsDto findLessonsGroupedByLessonGroup(Integer courseId) {
-    List<LessonGroupWithLesson> lessons =
+    List<LessonGroupWithLessonAndTag> lessons =
         lessonRepository.findLessonsGroupedByLessonGroup(courseId);
-    Map<Integer, List<LessonGroupWithLesson>> lessonGroupIdAndLessonsMap =
-        lessons.stream().collect(Collectors.groupingBy(LessonGroupWithLesson::getLessonGroupId));
+    Map<Integer, List<LessonGroupWithLessonAndTag>> lessonGroupIdAndLessonsMap =
+        lessons.stream()
+            .collect(Collectors.groupingBy(LessonGroupWithLessonAndTag::getLessonGroupId));
     List<LessonGroupDto> lessonGroupDtos =
         lessonGroupIdAndLessonsMap.values().stream().map(LessonGroupDto::from).toList();
     return new CourseLessonsDto(courseId, lessonGroupDtos);

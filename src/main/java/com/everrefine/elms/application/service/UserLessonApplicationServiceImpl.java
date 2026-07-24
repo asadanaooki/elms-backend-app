@@ -1,26 +1,18 @@
 package com.everrefine.elms.application.service;
 
 import com.everrefine.elms.application.command.UserLessonCompletionStatusUpdateCommand;
-import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.UserLessonDetailDto;
-import com.everrefine.elms.application.dto.UserLessonDto;
 import com.everrefine.elms.application.dto.UserLessonGroupDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.UserLesson;
-import com.everrefine.elms.domain.model.course.Course;
 import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.user.User;
 import com.everrefine.elms.domain.repository.CourseRepository;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.domain.repository.UserLessonRepository;
 import com.everrefine.elms.domain.repository.UserRepository;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -118,46 +110,49 @@ public class UserLessonApplicationServiceImpl implements UserLessonApplicationSe
   @Override
   @Transactional(readOnly = true)
   public List<UserLessonGroupDto> findUserLessons(Integer userId, Integer courseId) {
-    userRepository
-        .findUserById(userId)
-        .orElseThrow(() -> new ResourceNotFoundException(User.class, String.valueOf(userId)));
-    courseRepository
-        .findCourseById(courseId)
-        .orElseThrow(() -> new ResourceNotFoundException(Course.class, String.valueOf(courseId)));
-
-    List<LessonGroupWithLesson> allLessonsInTargetCourse =
-        lessonRepository.findLessonsGroupedByLessonGroup(courseId);
-
-    Set<Integer> lessonIds =
-        allLessonsInTargetCourse.stream()
-            .map(LessonGroupWithLesson::getLessonId)
-            .collect(Collectors.toSet());
-
-    Set<Integer> completedLessonIds =
-        userLessonRepository.findLessonIdByUserIdAndLessonIdIn(userId, lessonIds);
-
-    Map<Integer, List<LessonGroupWithLesson>> lessonGroupIdAndLessonsMap =
-        allLessonsInTargetCourse.stream()
-            .sorted(Comparator.comparing(LessonGroupWithLesson::getLessonGroupOrder))
-            .collect(
-                Collectors.groupingBy(
-                    LessonGroupWithLesson::getLessonGroupId,
-                    LinkedHashMap::new,
-                    Collectors.toList()));
-    return lessonGroupIdAndLessonsMap.values().stream()
-        .map(
-            allLessonsInTargetLessonGroup -> {
-              List<UserLessonDto> userLessonDtos =
-                  allLessonsInTargetLessonGroup.stream()
-                      .sorted(Comparator.comparing(LessonGroupWithLesson::getLessonOrder))
-                      .map(
-                          lesson ->
-                              new UserLessonDto(
-                                  LessonDto.from(lesson),
-                                  completedLessonIds.contains(lesson.getLessonId())))
-                      .toList();
-              return UserLessonGroupDto.from(allLessonsInTargetLessonGroup, userLessonDtos);
-            })
-        .toList();
+    //    userRepository
+    //        .findUserById(userId)
+    //        .orElseThrow(() -> new ResourceNotFoundException(User.class, String.valueOf(userId)));
+    //    courseRepository
+    //        .findCourseById(courseId)
+    //        .orElseThrow(() -> new ResourceNotFoundException(Course.class,
+    // String.valueOf(courseId)));
+    //
+    //    List<LessonGroupWithLesson> allLessonsInTargetCourse =
+    //        lessonRepository.findLessonsGroupedByLessonGroup(courseId);
+    //
+    //    Set<Integer> lessonIds =
+    //        allLessonsInTargetCourse.stream()
+    //            .map(LessonGroupWithLesson::getLessonId)
+    //            .collect(Collectors.toSet());
+    //
+    //    Set<Integer> completedLessonIds =
+    //        userLessonRepository.findLessonIdByUserIdAndLessonIdIn(userId, lessonIds);
+    //
+    //    Map<Integer, List<LessonGroupWithLesson>> lessonGroupIdAndLessonsMap =
+    //        allLessonsInTargetCourse.stream()
+    //            .sorted(Comparator.comparing(LessonGroupWithLesson::getLessonGroupOrder))
+    //            .collect(
+    //                Collectors.groupingBy(
+    //                    LessonGroupWithLesson::getLessonGroupId,
+    //                    LinkedHashMap::new,
+    //                    Collectors.toList()));
+    //    return lessonGroupIdAndLessonsMap.values().stream()
+    //        .map(
+    //            allLessonsInTargetLessonGroup -> {
+    //              List<UserLessonDto> userLessonDtos =
+    //                  allLessonsInTargetLessonGroup.stream()
+    //                      .sorted(Comparator.comparing(LessonGroupWithLesson::getLessonOrder))
+    //                      .map(
+    //                          lesson ->
+    //                              new UserLessonDto(
+    //                                      // TODO: 修正
+    //                                  LessonDto.from(lesson),
+    //                                  completedLessonIds.contains(lesson.getLessonId())))
+    //                      .toList();
+    //              return UserLessonGroupDto.from(allLessonsInTargetLessonGroup, userLessonDtos);
+    //            })
+    //        .toList();
+    return Collections.EMPTY_LIST;
   }
 }

@@ -293,14 +293,51 @@ public class LessonApplicationServiceImplTest {
   void 正常系_コース別レッスン一覧を取得できること() {
     // Arrange - テストデータを準備（IDは自動生成）
     Integer courseId = createCourse(new BigDecimal("1"), "テストコース", "コース説明");
-    createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+    Integer lessonGroupId = createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+
+    Integer lessonCId =
+        createLesson(
+            lessonGroupId,
+            courseId,
+            new BigDecimal("2"),
+            "レッスンC",
+            "レッスンCの説明",
+            "https://example.com/lesson-c.mp4");
+    Integer lessonBId =
+        createLesson(
+            lessonGroupId,
+            courseId,
+            new BigDecimal("1"),
+            "レッスンB",
+            "レッスンBの説明",
+            "https://example.com/lesson-b.mp4");
+
+    Integer tag1Id = createTag("タグ1");
+    Integer tag2Id = createTag("タグ2");
+    Integer tag3Id = createTag("タグ3");
+    createLessonTag(lessonCId, tag1Id);
+    createLessonTag(lessonCId, tag2Id);
+    createLessonTag(lessonCId, tag3Id);
 
     // Act
     CourseLessonsDto result = lessonApplicationService.findLessonsGroupedByLessonGroup(courseId);
 
     // Assert
     assertNotNull(result);
-    assertNotNull(result.lessonGroups());
+    assertEquals(courseId, result.courseId());
+    assertEquals(1, result.lessonGroups().size());
+
+    List<LessonDto> lessons = result.lessonGroups().getFirst().lessons();
+    assertEquals(2, lessons.size());
+    assertEquals(List.of(lessonBId, lessonCId), lessons.stream().map(LessonDto::getId).toList());
+
+    List<TagDto> lessonBTags = lessons.get(0).getTags();
+    assertTrue(lessonBTags.isEmpty());
+
+    List<TagDto> lessonCTags = lessons.get(1).getTags();
+    assertEquals(3, lessonCTags.size());
+    assertEquals(List.of(tag1Id, tag2Id, tag3Id), lessonCTags.stream().map(TagDto::getId).toList());
+    assertEquals(List.of("タグ1", "タグ2", "タグ3"), lessonCTags.stream().map(TagDto::getName).toList());
   }
 
   @Test

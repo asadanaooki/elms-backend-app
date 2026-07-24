@@ -1,7 +1,7 @@
 package com.everrefine.elms.application.dto;
 
 import com.everrefine.elms.domain.model.lesson.LessonGroup;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -46,13 +46,13 @@ public record LessonGroupDto(
   }
 
   /**
-   * LessonGroupWithLessonリストからLessonGroupDtoを生成する。
+   * LessonGroupWithLessonAndTagリストからLessonGroupDtoを生成する。
    *
    * @param lessons レッスングループとレッスンの結合情報リスト
    * @return レッスングループDTO
    */
-  public static LessonGroupDto from(List<LessonGroupWithLesson> lessons) {
-    LessonGroupWithLesson first = lessons.getFirst();
+  public static LessonGroupDto from(List<LessonGroupWithLessonAndTag> lessons) {
+    LessonGroupWithLessonAndTag first = lessons.getFirst();
 
     List<LessonDto> lessonDtos =
         lessons.stream()
