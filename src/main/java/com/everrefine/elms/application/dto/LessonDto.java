@@ -1,11 +1,13 @@
 package com.everrefine.elms.application.dto;
 
-import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
+
+import com.everrefine.elms.domain.model.lesson.Lesson;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
+import com.everrefine.elms.domain.model.tag.Tag;
+
 import lombok.Getter;
 
 /** レッスン DTO。 */
@@ -18,7 +20,7 @@ public class LessonDto extends BaseLessonDto {
    * @param lesson レッスンエンティティ
    * @return レッスンDTO
    */
-  public static LessonDto from(Lesson lesson, List<TagDto> tags) {
+  public static LessonDto from(Lesson lesson, List<Tag> tags) {
     return new LessonDto(
         lesson.getId(),
         lesson.getLessonGroupId(),
@@ -27,7 +29,7 @@ public class LessonDto extends BaseLessonDto {
         lesson.getTitle().getValue(),
         lesson.getContent() != null ? lesson.getContent().getValue() : null,
         lesson.getVideoUrl() != null ? lesson.getVideoUrl().getValue() : null,
-        tags != null ? tags : Collections.emptyList(),
+        tags.stream().map(t -> new TagDto(t.getId(), t.getName().getValue())).toList(),
         lesson.getCreatedAt(),
         lesson.getUpdatedAt());
   }
@@ -39,7 +41,7 @@ public class LessonDto extends BaseLessonDto {
    * @return レッスンDTO
    */
   public static LessonDto from(LessonGroupWithLessonAndTag lessonGroupWithLessonAndTag) {
-    return new LessonDto(
+      return new LessonDto(
         lessonGroupWithLessonAndTag.getLessonId(),
         lessonGroupWithLessonAndTag.getLessonGroupId(),
         lessonGroupWithLessonAndTag.getCourseId(),

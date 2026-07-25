@@ -25,4 +25,9 @@ public class TagRepositoryImpl implements TagRepository {
     List<String> stringNames = names.stream().map(TagName::getValue).toList();
     return tagDao.findAllByNameIn(stringNames);
   }
+
+  @Override
+  public List<Tag> findAllTagsByLessonId(Integer lessonId) {
+      return tagDao.findAllByLessonId(lessonId);
+  }
 }

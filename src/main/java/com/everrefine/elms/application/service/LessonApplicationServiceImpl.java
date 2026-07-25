@@ -1,5 +1,24 @@
 package com.everrefine.elms.application.service;
 
+import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.everrefine.elms.application.command.LessonCreateCommand;
 import com.everrefine.elms.application.command.LessonOrderUpdateCommand;
 import com.everrefine.elms.application.command.LessonSearchCommand;
@@ -22,24 +41,8 @@ import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.domain.repository.LessonTagRepository;
 import com.everrefine.elms.domain.repository.TagRepository;
 import com.everrefine.elms.domain.service.LessonDomainService;
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+
 import lombok.AllArgsConstructor;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /** レッスンアプリケーションサービスの実装に関するクラス。 */
 @Service
@@ -81,7 +84,8 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   @Transactional(readOnly = true)
   public LessonDto findLessonById(Integer courseId, Integer lessonGroupId, Integer lessonId) {
     Lesson lesson = findLessonBelongingToCourseAndGroupOrThrow(lessonId, courseId, lessonGroupId);
-    return LessonDto.from(lesson, Collections.emptyList());
+   List<Tag> tagsByLessonId = tagRepository.findAllTagsByLessonId(lessonId);
+    return LessonDto.from(lesson, tagsByLessonId);
   }
 
   @Override
@@ -157,9 +161,9 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson updatedLesson =
         lessonRepository.updateLesson(lessonUpdateCommand.toLesson(currentLesson));
 
-    List<TagDto> associatedTagDtos = replaceLessonTags(lessonId, lessonUpdateCommand.getTagNames());
+    List<Tag> associatedTags = replaceLessonTags(lessonId, lessonUpdateCommand.getTagNames());
 
-    return LessonDto.from(updatedLesson, associatedTagDtos);
+    return LessonDto.from(updatedLesson, associatedTags);
   }
 
   @Override
@@ -286,7 +290,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     return new ByteArrayResource(baos.toByteArray());
   }
 
-  private List<TagDto> replaceLessonTags(Integer lessonId, List<String> requestedTagNames) {
+  private List<Tag> replaceLessonTags(Integer lessonId, List<String> requestedTagNames) {
     Map<String, Tag> uniqueTagsByName = new LinkedHashMap<>();
     requestedTagNames.stream()
         .map(Tag::create)
@@ -317,7 +321,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
         tagsInRequestOrder.stream().map(t -> LessonTag.create(lessonId, t.getId())).toList();
     lessonTagRepository.saveAll(lessonTagAssociations);
 
-    return toTagDtos(tagsInRequestOrder);
+    return tagsInRequestOrder;
   }
 
   private List<Tag> findTagsInRequestOrder(List<Tag> normalizedTags) {
@@ -328,9 +332,5 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
             .collect(Collectors.toMap(Tag::getName, Function.identity()));
 
     return normalizedTags.stream().map(t -> persistedTagsByName.get(t.getName())).toList();
-  }
-
-  private List<TagDto> toTagDtos(List<Tag> tags) {
-    return tags.stream().map(t -> new TagDto(t.getId(), t.getName().getValue())).toList();
   }
 }
