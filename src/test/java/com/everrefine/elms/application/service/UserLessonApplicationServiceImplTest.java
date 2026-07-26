@@ -140,6 +140,31 @@ public class UserLessonApplicationServiceImplTest {
         LocalDateTime.now());
   }
 
+  public Integer createTag(String name) {
+    jdbcTemplate.update(
+        """
+            INSERT INTO tags (name, created_at, updated_at)
+            VALUES (?, ?, ?)
+            """,
+        name,
+        LocalDateTime.now(),
+        LocalDateTime.now());
+    return jdbcTemplate.queryForObject(
+        "SELECT id FROM tags WHERE name = ?", Integer.class, name);
+  }
+
+  public void createLessonTag(Integer lessonId, Integer tagId) {
+    jdbcTemplate.update(
+        """
+            INSERT INTO lesson_tags (lesson_id, tag_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+            """,
+        lessonId,
+        tagId,
+        LocalDateTime.now(),
+        LocalDateTime.now());
+  }
+
   @Test
   void 正常系_レッスン詳細取得で未完了の場合isLessonCompletedがfalseになること() {
     Integer courseId = createCourse(new BigDecimal("1"), "ULテストコース", "コース説明");
@@ -390,6 +415,14 @@ public class UserLessonApplicationServiceImplTest {
     createUserLesson(userId, lessonId1);
     createUserLesson(userId, lessonId3);
     createUserLesson(userId, lessonId4);
+    Integer lesson1FirstTagId = createTag("ULレッスン1タグ1");
+    Integer lesson1SecondTagId = createTag("ULレッスン1タグ2");
+    Integer lesson3TagId = createTag("ULレッスン3タグ");
+    Integer lesson4TagId = createTag("ULレッスン4タグ");
+    createLessonTag(lessonId1, lesson1SecondTagId);
+    createLessonTag(lessonId1, lesson1FirstTagId);
+    createLessonTag(lessonId3, lesson3TagId);
+    createLessonTag(lessonId4, lesson4TagId);
     // Act
     List<UserLessonGroupDto> userLessonGroupDto =
         userLessonApplicationService.findUserLessons(userId, courseId1);
@@ -413,6 +446,27 @@ public class UserLessonApplicationServiceImplTest {
     // レッスン順番になっていること
     assertEquals(lessonId1, userLessonGroupDto.getFirst().userLessons().get(0).lesson().getId());
     assertEquals(lessonId2, userLessonGroupDto.getFirst().userLessons().get(1).lesson().getId());
+    // 各レッスンに紐づくタグが取得できること
+    var lesson1Tags = userLessonGroupDto.getFirst().userLessons().get(0).lesson().getTags();
+    assertEquals(2, lesson1Tags.size());
+    assertEquals(
+        List.of(lesson1FirstTagId, lesson1SecondTagId),
+        lesson1Tags.stream().map(tag -> tag.getId()).toList());
+    assertEquals(lesson1FirstTagId, lesson1Tags.getFirst().getId());
+    assertEquals("ULレッスン1タグ1", lesson1Tags.getFirst().getName());
+
+    var lesson2Tags = userLessonGroupDto.getFirst().userLessons().get(1).lesson().getTags();
+    assertEquals(0, lesson2Tags.size());
+
+    var lesson3Tags = userLessonGroupDto.get(1).userLessons().getFirst().lesson().getTags();
+    assertEquals(1, lesson3Tags.size());
+    assertEquals(lesson3TagId, lesson3Tags.getFirst().getId());
+    assertEquals("ULレッスン3タグ", lesson3Tags.getFirst().getName());
+
+    var lesson4Tags = userLessonGroupDto2.getFirst().userLessons().getFirst().lesson().getTags();
+    assertEquals(1, lesson4Tags.size());
+    assertEquals(lesson4TagId, lesson4Tags.getFirst().getId());
+    assertEquals("ULレッスン4タグ", lesson4Tags.getFirst().getName());
     // 別コースは混ざらないこと
     assertEquals(2, userLessonGroupDto.size());
     assertEquals(lessonGroupId3, userLessonGroupDto2.getFirst().id());
