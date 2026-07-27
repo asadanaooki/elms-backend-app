@@ -1,8 +1,6 @@
 package com.everrefine.elms.application.dto;
 
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,7 +25,7 @@ public record UserLessonGroupDto(
    */
   public static UserLessonGroupDto from(
       List<LessonGroupWithLessonAndTag> lessons, List<UserLessonDto> userLessonDtos) {
-      LessonGroupWithLessonAndTag first = lessons.getFirst();
+    LessonGroupWithLessonAndTag first = lessons.getFirst();
 
     return new UserLessonGroupDto(
         first.getLessonGroupId(),

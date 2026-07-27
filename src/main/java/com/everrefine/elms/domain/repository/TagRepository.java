@@ -21,7 +21,7 @@ public interface TagRepository {
    * @return 全タグ一覧
    */
   List<Tag> findAllTagsByNames(List<TagName> names);
-  
+
   /**
    * 指定されたレッスンIDに紐づくタグを取得する。
    *

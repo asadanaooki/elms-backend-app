@@ -28,6 +28,6 @@ public class TagRepositoryImpl implements TagRepository {
 
   @Override
   public List<Tag> findAllTagsByLessonId(Integer lessonId) {
-      return tagDao.findAllByLessonId(lessonId);
+    return tagDao.findAllByLessonId(lessonId);
   }
 }

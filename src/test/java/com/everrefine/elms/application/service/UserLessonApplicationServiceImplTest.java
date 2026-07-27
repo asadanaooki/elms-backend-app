@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.everrefine.elms.application.command.UserLessonCompletionStatusUpdateCommand;
+import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.dto.UserLessonDetailDto;
 import com.everrefine.elms.application.dto.UserLessonGroupDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
@@ -149,8 +150,7 @@ public class UserLessonApplicationServiceImplTest {
         name,
         LocalDateTime.now(),
         LocalDateTime.now());
-    return jdbcTemplate.queryForObject(
-        "SELECT id FROM tags WHERE name = ?", Integer.class, name);
+    return jdbcTemplate.queryForObject("SELECT id FROM tags WHERE name = ?", Integer.class, name);
   }
 
   public void createLessonTag(Integer lessonId, Integer tagId) {
@@ -178,6 +178,7 @@ public class UserLessonApplicationServiceImplTest {
             "説明",
             "https://example.com/video.mp4");
     Integer userId = createUser("ul-not-done@example.com", "p", "太郎", "ulnd", "GENERAL");
+    createTag("UL未完了紐づかないタグ");
 
     UserLessonDetailDto result =
         userLessonApplicationService.findUserLessonDetail(
@@ -186,6 +187,7 @@ public class UserLessonApplicationServiceImplTest {
     assertNotNull(result);
     assertEquals(lessonId, result.getId());
     assertFalse(result.isLessonCompleted());
+    assertTrue(result.getTags().isEmpty());
   }
 
   @Test
@@ -202,6 +204,13 @@ public class UserLessonApplicationServiceImplTest {
             "https://example.com/video.mp4");
     Integer userId = createUser("ul-done@example.com", "p", "次郎", "uld", "GENERAL");
     createUserLesson(userId, lessonId);
+    Integer tag1Id = createTag("UL完了タグ1");
+    Integer tag2Id = createTag("UL完了タグ2");
+    Integer tag3Id = createTag("UL完了タグ3");
+    createTag("UL完了紐づかないタグ");
+    createLessonTag(lessonId, tag3Id);
+    createLessonTag(lessonId, tag1Id);
+    createLessonTag(lessonId, tag2Id);
 
     UserLessonDetailDto result =
         userLessonApplicationService.findUserLessonDetail(
@@ -210,6 +219,11 @@ public class UserLessonApplicationServiceImplTest {
     assertNotNull(result);
     assertEquals(lessonId, result.getId());
     assertTrue(result.isLessonCompleted());
+    List<TagDto> tags = result.getTags();
+    assertEquals(3, tags.size());
+    assertEquals(List.of(tag1Id, tag2Id, tag3Id), tags.stream().map(TagDto::getId).toList());
+    assertEquals(tag1Id, tags.get(0).getId());
+    assertEquals("UL完了タグ1", tags.get(0).getName());
   }
 
   @Test

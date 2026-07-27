@@ -15,40 +15,50 @@ import org.springframework.stereotype.Component;
 
 @Component("lessonGroupWithLessonAndTagsResultSetExtractor")
 public class LessonGroupWithLessonAndTagsResultSetExtractor
-        implements ResultSetExtractor<List<LessonGroupWithLessonAndTag>> {
+    implements ResultSetExtractor<List<LessonGroupWithLessonAndTag>> {
 
-    @Override
-    public List<LessonGroupWithLessonAndTag> extractData(ResultSet resultSet) throws SQLException {
-        Map<Integer, LessonGroupWithLessonAndTag> lessonsBylessonId = new LinkedHashMap<Integer, LessonGroupWithLessonAndTag>();
+  @Override
+  public List<LessonGroupWithLessonAndTag> extractData(ResultSet resultSet) throws SQLException {
+    Map<Integer, LessonGroupWithLessonAndTag> lessonsBylessonId =
+        new LinkedHashMap<Integer, LessonGroupWithLessonAndTag>();
 
-        while (resultSet.next()) {
-            Integer lessonId = resultSet.getObject("lesson_id", Integer.class);
-            LessonGroupWithLessonAndTag lessonWithTags = lessonsBylessonId.get(lessonId);
+    while (resultSet.next()) {
+      Integer lessonId = resultSet.getObject("lesson_id", Integer.class);
+      LessonGroupWithLessonAndTag lessonWithTags = lessonsBylessonId.get(lessonId);
 
-            if (lessonWithTags == null) {
-                lessonWithTags = new LessonGroupWithLessonAndTag(resultSet.getObject("lesson_id", Integer.class),
-                        resultSet.getString("lesson_title"), resultSet.getBigDecimal("lesson_order"),
-                        resultSet.getString("lesson_content"), resultSet.getString("lesson_video_url"),
-                        resultSet.getObject("lesson_created_at", LocalDateTime.class),
-                        resultSet.getObject("lesson_updated_at", LocalDateTime.class),
-                        resultSet.getObject("lesson_group_id", Integer.class),
-                        resultSet.getObject("course_id", Integer.class), resultSet.getString("lesson_group_title"),
-                        resultSet.getBigDecimal("lesson_group_order"),
-                        resultSet.getObject("lesson_group_created_at", LocalDateTime.class),
-                        resultSet.getObject("lesson_group_updated_at", LocalDateTime.class), new ArrayList<>());
-                lessonsBylessonId.put(lessonId, lessonWithTags);
-            }
-            Integer tagId = resultSet.getObject("tag_id", Integer.class);
+      if (lessonWithTags == null) {
+        lessonWithTags =
+            new LessonGroupWithLessonAndTag(
+                resultSet.getObject("lesson_id", Integer.class),
+                resultSet.getString("lesson_title"),
+                resultSet.getBigDecimal("lesson_order"),
+                resultSet.getString("lesson_content"),
+                resultSet.getString("lesson_video_url"),
+                resultSet.getObject("lesson_created_at", LocalDateTime.class),
+                resultSet.getObject("lesson_updated_at", LocalDateTime.class),
+                resultSet.getObject("lesson_group_id", Integer.class),
+                resultSet.getObject("course_id", Integer.class),
+                resultSet.getString("lesson_group_title"),
+                resultSet.getBigDecimal("lesson_group_order"),
+                resultSet.getObject("lesson_group_created_at", LocalDateTime.class),
+                resultSet.getObject("lesson_group_updated_at", LocalDateTime.class),
+                new ArrayList<>());
+        lessonsBylessonId.put(lessonId, lessonWithTags);
+      }
+      Integer tagId = resultSet.getObject("tag_id", Integer.class);
 
-            if (tagId != null) {
-                lessonWithTags.getTags()
-                    .add(new Tag(tagId, new TagName(resultSet.getString("tag_name")),
-                            resultSet.getObject("tag_created_at", LocalDateTime.class),
-                            resultSet.getObject("tag_updated_at", LocalDateTime.class)));
-            }
-        }
-
-        return new ArrayList<LessonGroupWithLessonAndTag>(lessonsBylessonId.values());
+      if (tagId != null) {
+        lessonWithTags
+            .getTags()
+            .add(
+                new Tag(
+                    tagId,
+                    new TagName(resultSet.getString("tag_name")),
+                    resultSet.getObject("tag_created_at", LocalDateTime.class),
+                    resultSet.getObject("tag_updated_at", LocalDateTime.class)));
+      }
     }
 
+    return new ArrayList<LessonGroupWithLessonAndTag>(lessonsBylessonId.values());
+  }
 }

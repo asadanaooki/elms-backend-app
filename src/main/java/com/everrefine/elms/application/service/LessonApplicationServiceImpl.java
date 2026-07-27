@@ -1,5 +1,25 @@
 package com.everrefine.elms.application.service;
 
+import com.everrefine.elms.application.command.LessonCreateCommand;
+import com.everrefine.elms.application.command.LessonOrderUpdateCommand;
+import com.everrefine.elms.application.command.LessonSearchCommand;
+import com.everrefine.elms.application.command.LessonUpdateCommand;
+import com.everrefine.elms.application.dto.CourseLessonsDto;
+import com.everrefine.elms.application.dto.LessonDto;
+import com.everrefine.elms.application.dto.LessonGroupDto;
+import com.everrefine.elms.application.dto.LessonPageDto;
+import com.everrefine.elms.application.dto.LessonWithCourseAndLessonGroupDto;
+import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.model.LessonTag;
+import com.everrefine.elms.domain.model.lesson.Lesson;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
+import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
+import com.everrefine.elms.domain.model.tag.Tag;
+import com.everrefine.elms.domain.model.tag.TagName;
+import com.everrefine.elms.domain.repository.LessonRepository;
+import com.everrefine.elms.domain.repository.LessonTagRepository;
+import com.everrefine.elms.domain.repository.TagRepository;
+import com.everrefine.elms.domain.service.LessonDomainService;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
@@ -13,36 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
+import lombok.AllArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.everrefine.elms.application.command.LessonCreateCommand;
-import com.everrefine.elms.application.command.LessonOrderUpdateCommand;
-import com.everrefine.elms.application.command.LessonSearchCommand;
-import com.everrefine.elms.application.command.LessonUpdateCommand;
-import com.everrefine.elms.application.dto.CourseLessonsDto;
-import com.everrefine.elms.application.dto.LessonDto;
-import com.everrefine.elms.application.dto.LessonGroupDto;
-import com.everrefine.elms.application.dto.LessonPageDto;
-import com.everrefine.elms.application.dto.LessonWithCourseAndLessonGroupDto;
-import com.everrefine.elms.application.dto.TagDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
-import com.everrefine.elms.domain.model.LessonTag;
-import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
-import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
-import com.everrefine.elms.domain.model.tag.Tag;
-import com.everrefine.elms.domain.model.tag.TagName;
-import com.everrefine.elms.domain.repository.LessonGroupRepository;
-import com.everrefine.elms.domain.repository.LessonRepository;
-import com.everrefine.elms.domain.repository.LessonTagRepository;
-import com.everrefine.elms.domain.repository.TagRepository;
-import com.everrefine.elms.domain.service.LessonDomainService;
-
-import lombok.AllArgsConstructor;
 
 /** レッスンアプリケーションサービスの実装に関するクラス。 */
 @Service
@@ -50,14 +45,9 @@ import lombok.AllArgsConstructor;
 public class LessonApplicationServiceImpl implements LessonApplicationService {
 
   private final LessonRepository lessonRepository;
-
   private final LessonDomainService lessonDomainService;
-
   private final LessonTagRepository lessonTagRepository;
-
   private final TagRepository tagRepository;
-
-  private final LessonGroupRepository lessonGroupRepository;
 
   /**
    * CSV出力用に値をエスケープする。
@@ -84,7 +74,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   @Transactional(readOnly = true)
   public LessonDto findLessonById(Integer courseId, Integer lessonGroupId, Integer lessonId) {
     Lesson lesson = findLessonBelongingToCourseAndGroupOrThrow(lessonId, courseId, lessonGroupId);
-   List<Tag> tagsByLessonId = tagRepository.findAllTagsByLessonId(lessonId);
+    List<Tag> tagsByLessonId = tagRepository.findAllTagsByLessonId(lessonId);
     return LessonDto.from(lesson, tagsByLessonId);
   }
 

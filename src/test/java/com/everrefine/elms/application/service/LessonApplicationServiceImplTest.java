@@ -219,10 +219,8 @@ public class LessonApplicationServiceImplTest {
     assertEquals("テスト説明", result.getContent());
     assertEquals("https://example.com/video.mp4", result.getVideoUrl());
     assertEquals(2, result.getTags().size());
-    assertEquals(
-        List.of(tag1Id, tag2Id), result.getTags().stream().map(TagDto::getId).toList());
-    assertEquals(
-        List.of("タグ1", "タグ2"), result.getTags().stream().map(TagDto::getName).toList());
+    assertEquals(List.of(tag1Id, tag2Id), result.getTags().stream().map(TagDto::getId).toList());
+    assertEquals(List.of("タグ1", "タグ2"), result.getTags().stream().map(TagDto::getName).toList());
     assertTrue(result.getTags().stream().noneMatch(tag -> tag.getId().equals(unassociatedTagId)));
     assertNotNull(result.getCreatedAt());
     assertNotNull(result.getUpdatedAt());

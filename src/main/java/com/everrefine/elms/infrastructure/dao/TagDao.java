@@ -1,21 +1,19 @@
 package com.everrefine.elms.infrastructure.dao;
 
+import com.everrefine.elms.domain.model.tag.Tag;
 import java.util.List;
-
 import org.springframework.data.jdbc.repository.query.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
-
-import com.everrefine.elms.domain.model.tag.Tag;
 
 /** タグのDAOインターフェース。 */
 public interface TagDao extends CrudRepository<Tag, Integer> {
 
   List<Tag> findAllByNameIn(List<String> names);
-  
+
   @Query(
-          """
-          SELECT 
+      """
+          SELECT
             t.id,
             t.name,
             t.created_at,

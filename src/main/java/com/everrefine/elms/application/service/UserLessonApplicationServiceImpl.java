@@ -1,15 +1,5 @@
 package com.everrefine.elms.application.service;
 
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.everrefine.elms.application.command.UserLessonCompletionStatusUpdateCommand;
 import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.UserLessonDetailDto;
@@ -19,15 +9,23 @@ import com.everrefine.elms.application.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.UserLesson;
 import com.everrefine.elms.domain.model.course.Course;
 import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
+import com.everrefine.elms.domain.model.tag.Tag;
 import com.everrefine.elms.domain.model.user.User;
 import com.everrefine.elms.domain.repository.CourseRepository;
 import com.everrefine.elms.domain.repository.LessonRepository;
+import com.everrefine.elms.domain.repository.TagRepository;
 import com.everrefine.elms.domain.repository.UserLessonRepository;
 import com.everrefine.elms.domain.repository.UserRepository;
-
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /** ユーザーレッスンアプリケーションサービスの実装に関するクラス。 */
 @Service
@@ -38,6 +36,7 @@ public class UserLessonApplicationServiceImpl implements UserLessonApplicationSe
   private final UserRepository userRepository;
   private final UserLessonRepository userLessonRepository;
   private final CourseRepository courseRepository;
+  private final TagRepository tagRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -45,9 +44,10 @@ public class UserLessonApplicationServiceImpl implements UserLessonApplicationSe
       Integer userId, Integer courseId, Integer lessonGroupId, Integer lessonId) {
     Lesson lesson =
         findLessonBelongingToCourseAndLessonGroupOrThrow(lessonId, courseId, lessonGroupId);
+    List<Tag> tags = tagRepository.findAllTagsByLessonId(lessonId);
     boolean isLessonCompleted =
         userLessonRepository.findByUserIdAndLessonId(userId, lessonId).isPresent();
-    return UserLessonDetailDto.from(lesson, isLessonCompleted);
+    return UserLessonDetailDto.from(lesson, tags, isLessonCompleted);
   }
 
   @Override
@@ -122,47 +122,46 @@ public class UserLessonApplicationServiceImpl implements UserLessonApplicationSe
   @Override
   @Transactional(readOnly = true)
   public List<UserLessonGroupDto> findUserLessons(Integer userId, Integer courseId) {
-        userRepository
-            .findUserById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException(User.class, String.valueOf(userId)));
-        courseRepository
-            .findCourseById(courseId)
-            .orElseThrow(() -> new ResourceNotFoundException(Course.class,
-     String.valueOf(courseId)));
-    
-        List<LessonGroupWithLessonAndTag> allLessonsInTargetCourse =
-            lessonRepository.findLessonsGroupedByLessonGroup(courseId);
-    
-        Set<Integer> lessonIds =
-            allLessonsInTargetCourse.stream()
-                .map(LessonGroupWithLessonAndTag::getLessonId)
-                .collect(Collectors.toSet());
-    
-        Set<Integer> completedLessonIds =
-            userLessonRepository.findLessonIdByUserIdAndLessonIdIn(userId, lessonIds);
-    
-        Map<Integer, List<LessonGroupWithLessonAndTag>> lessonGroupIdAndLessonsMap =
-            allLessonsInTargetCourse.stream()
-                .sorted(Comparator.comparing(LessonGroupWithLessonAndTag::getLessonGroupOrder))
-                .collect(
-                    Collectors.groupingBy(
-                        LessonGroupWithLessonAndTag::getLessonGroupId,
-                        LinkedHashMap::new,
-                        Collectors.toList()));
-        return lessonGroupIdAndLessonsMap.values().stream()
-            .map(
-                allLessonsInTargetLessonGroup -> {
-                  List<UserLessonDto> userLessonDtos =
-                      allLessonsInTargetLessonGroup.stream()
-                          .sorted(Comparator.comparing(LessonGroupWithLessonAndTag::getLessonOrder))
-                          .map(
-                              lesson ->
-                                  new UserLessonDto(
-                                      LessonDto.from(lesson),
-                                      completedLessonIds.contains(lesson.getLessonId())))
-                          .toList();
-                  return UserLessonGroupDto.from(allLessonsInTargetLessonGroup, userLessonDtos);
-                })
-            .toList();
+    userRepository
+        .findUserById(userId)
+        .orElseThrow(() -> new ResourceNotFoundException(User.class, String.valueOf(userId)));
+    courseRepository
+        .findCourseById(courseId)
+        .orElseThrow(() -> new ResourceNotFoundException(Course.class, String.valueOf(courseId)));
+
+    List<LessonGroupWithLessonAndTag> allLessonsInTargetCourse =
+        lessonRepository.findLessonsGroupedByLessonGroup(courseId);
+
+    Set<Integer> lessonIds =
+        allLessonsInTargetCourse.stream()
+            .map(LessonGroupWithLessonAndTag::getLessonId)
+            .collect(Collectors.toSet());
+
+    Set<Integer> completedLessonIds =
+        userLessonRepository.findLessonIdByUserIdAndLessonIdIn(userId, lessonIds);
+
+    Map<Integer, List<LessonGroupWithLessonAndTag>> lessonGroupIdAndLessonsMap =
+        allLessonsInTargetCourse.stream()
+            .sorted(Comparator.comparing(LessonGroupWithLessonAndTag::getLessonGroupOrder))
+            .collect(
+                Collectors.groupingBy(
+                    LessonGroupWithLessonAndTag::getLessonGroupId,
+                    LinkedHashMap::new,
+                    Collectors.toList()));
+    return lessonGroupIdAndLessonsMap.values().stream()
+        .map(
+            allLessonsInTargetLessonGroup -> {
+              List<UserLessonDto> userLessonDtos =
+                  allLessonsInTargetLessonGroup.stream()
+                      .sorted(Comparator.comparing(LessonGroupWithLessonAndTag::getLessonOrder))
+                      .map(
+                          lesson ->
+                              new UserLessonDto(
+                                  LessonDto.from(lesson),
+                                  completedLessonIds.contains(lesson.getLessonId())))
+                      .toList();
+              return UserLessonGroupDto.from(allLessonsInTargetLessonGroup, userLessonDtos);
+            })
+        .toList();
   }
 }
