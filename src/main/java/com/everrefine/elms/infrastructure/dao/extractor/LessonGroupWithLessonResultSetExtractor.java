@@ -1,6 +1,6 @@
 package com.everrefine.elms.infrastructure.dao.extractor;
 
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.tag.Tag;
 import com.everrefine.elms.domain.model.tag.TagName;
 import java.sql.ResultSet;
@@ -13,22 +13,22 @@ import java.util.Map;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Component;
 
-@Component("lessonGroupWithLessonAndTagsResultSetExtractor")
-public class LessonGroupWithLessonAndTagsResultSetExtractor
-    implements ResultSetExtractor<List<LessonGroupWithLessonAndTag>> {
+@Component("LessonGroupWithLessonsResultSetExtractor")
+public class LessonGroupWithLessonResultSetExtractor
+    implements ResultSetExtractor<List<LessonGroupWithLesson>> {
 
   @Override
-  public List<LessonGroupWithLessonAndTag> extractData(ResultSet resultSet) throws SQLException {
-    Map<Integer, LessonGroupWithLessonAndTag> lessonsBylessonId =
-        new LinkedHashMap<Integer, LessonGroupWithLessonAndTag>();
+  public List<LessonGroupWithLesson> extractData(ResultSet resultSet) throws SQLException {
+    Map<Integer, LessonGroupWithLesson> lessonsBylessonId =
+        new LinkedHashMap<Integer, LessonGroupWithLesson>();
 
     while (resultSet.next()) {
       Integer lessonId = resultSet.getObject("lesson_id", Integer.class);
-      LessonGroupWithLessonAndTag lessonWithTags = lessonsBylessonId.get(lessonId);
+      LessonGroupWithLesson lessonWithTags = lessonsBylessonId.get(lessonId);
 
       if (lessonWithTags == null) {
         lessonWithTags =
-            new LessonGroupWithLessonAndTag(
+            new LessonGroupWithLesson(
                 resultSet.getObject("lesson_id", Integer.class),
                 resultSet.getString("lesson_title"),
                 resultSet.getBigDecimal("lesson_order"),
@@ -59,6 +59,6 @@ public class LessonGroupWithLessonAndTagsResultSetExtractor
       }
     }
 
-    return new ArrayList<LessonGroupWithLessonAndTag>(lessonsBylessonId.values());
+    return new ArrayList<LessonGroupWithLesson>(lessonsBylessonId.values());
   }
 }

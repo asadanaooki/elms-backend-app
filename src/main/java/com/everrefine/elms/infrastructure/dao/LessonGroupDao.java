@@ -1,7 +1,7 @@
 package com.everrefine.elms.infrastructure.dao;
 
 import com.everrefine.elms.domain.model.lesson.LessonGroup;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 public interface LessonGroupDao extends CrudRepository<LessonGroup, Integer> {
 
   @Query(
-      resultSetExtractorRef = "lessonGroupWithLessonAndTagsResultSetExtractor",
+      resultSetExtractorRef = "lessonGroupWithLessonResultSetExtractor",
       value =
           """
             SELECT
@@ -43,7 +43,7 @@ public interface LessonGroupDao extends CrudRepository<LessonGroup, Integer> {
             WHERE lg.course_id = :courseId
             ORDER BY lg.lesson_group_order ASC, l.lesson_order ASC, t.id ASC
             """)
-  List<LessonGroupWithLessonAndTag> findLessonGroupsByCourseId(@Param("courseId") Integer courseId);
+  List<LessonGroupWithLesson> findLessonGroupsByCourseId(@Param("courseId") Integer courseId);
 
   @Query(
       """

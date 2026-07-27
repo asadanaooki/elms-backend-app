@@ -12,7 +12,7 @@ import com.everrefine.elms.application.dto.LessonWithCourseAndLessonGroupDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.LessonTag;
 import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
 import com.everrefine.elms.domain.model.tag.Tag;
 import com.everrefine.elms.domain.model.tag.TagName;
@@ -124,11 +124,11 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   @Override
   @Transactional(readOnly = true)
   public CourseLessonsDto findLessonsGroupedByLessonGroup(Integer courseId) {
-    List<LessonGroupWithLessonAndTag> lessons =
+    List<LessonGroupWithLesson> lessons =
         lessonRepository.findLessonsGroupedByLessonGroup(courseId);
-    Map<Integer, List<LessonGroupWithLessonAndTag>> lessonGroupIdAndLessonsMap =
+    Map<Integer, List<LessonGroupWithLesson>> lessonGroupIdAndLessonsMap =
         lessons.stream()
-            .collect(Collectors.groupingBy(LessonGroupWithLessonAndTag::getLessonGroupId));
+            .collect(Collectors.groupingBy(LessonGroupWithLesson::getLessonGroupId));
     List<LessonGroupDto> lessonGroupDtos =
         lessonGroupIdAndLessonsMap.values().stream().map(LessonGroupDto::from).toList();
     return new CourseLessonsDto(courseId, lessonGroupDtos);

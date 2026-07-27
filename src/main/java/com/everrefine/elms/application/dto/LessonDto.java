@@ -1,7 +1,7 @@
 package com.everrefine.elms.application.dto;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.tag.Tag;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,23 +33,23 @@ public class LessonDto extends BaseLessonDto {
   }
 
   /**
-   * LessonGroupWithLessonAndTagからLessonDtoを生成する。
+   * LessonGroupWithLessonからLessonDtoを生成する。
    *
-   * @param LessonGroupWithLessonAndTag レッスングループとレッスンの結合情報
+   * @param LessonGroupWithLesson レッスングループとレッスンの結合情報
    * @return レッスンDTO
    */
-  public static LessonDto from(LessonGroupWithLessonAndTag lessonGroupWithLessonAndTag) {
+  public static LessonDto from(LessonGroupWithLesson lessonGroupWithLesson) {
     return new LessonDto(
-        lessonGroupWithLessonAndTag.getLessonId(),
-        lessonGroupWithLessonAndTag.getLessonGroupId(),
-        lessonGroupWithLessonAndTag.getCourseId(),
-        lessonGroupWithLessonAndTag.getLessonOrder(),
-        lessonGroupWithLessonAndTag.getLessonTitle(),
-        lessonGroupWithLessonAndTag.getLessonContent(),
-        lessonGroupWithLessonAndTag.getLessonVideoUrl(),
-        lessonGroupWithLessonAndTag.getTags().stream().map(TagDto::from).toList(),
-        lessonGroupWithLessonAndTag.getLessonCreatedAt(),
-        lessonGroupWithLessonAndTag.getLessonUpdatedAt());
+        lessonGroupWithLesson.getLessonId(),
+        lessonGroupWithLesson.getLessonGroupId(),
+        lessonGroupWithLesson.getCourseId(),
+        lessonGroupWithLesson.getLessonOrder(),
+        lessonGroupWithLesson.getLessonTitle(),
+        lessonGroupWithLesson.getLessonContent(),
+        lessonGroupWithLesson.getLessonVideoUrl(),
+        lessonGroupWithLesson.getTags().stream().map(TagDto::from).toList(),
+        lessonGroupWithLesson.getLessonCreatedAt(),
+        lessonGroupWithLesson.getLessonUpdatedAt());
   }
 
   private LessonDto(

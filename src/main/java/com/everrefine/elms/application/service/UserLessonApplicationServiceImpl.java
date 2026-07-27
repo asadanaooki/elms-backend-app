@@ -9,7 +9,7 @@ import com.everrefine.elms.application.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.UserLesson;
 import com.everrefine.elms.domain.model.course.Course;
 import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessonAndTag;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.tag.Tag;
 import com.everrefine.elms.domain.model.user.User;
 import com.everrefine.elms.domain.repository.CourseRepository;
@@ -129,23 +129,23 @@ public class UserLessonApplicationServiceImpl implements UserLessonApplicationSe
         .findCourseById(courseId)
         .orElseThrow(() -> new ResourceNotFoundException(Course.class, String.valueOf(courseId)));
 
-    List<LessonGroupWithLessonAndTag> allLessonsInTargetCourse =
+    List<LessonGroupWithLesson> allLessonsInTargetCourse =
         lessonRepository.findLessonsGroupedByLessonGroup(courseId);
 
     Set<Integer> lessonIds =
         allLessonsInTargetCourse.stream()
-            .map(LessonGroupWithLessonAndTag::getLessonId)
+            .map(LessonGroupWithLesson::getLessonId)
             .collect(Collectors.toSet());
 
     Set<Integer> completedLessonIds =
         userLessonRepository.findLessonIdByUserIdAndLessonIdIn(userId, lessonIds);
 
-    Map<Integer, List<LessonGroupWithLessonAndTag>> lessonGroupIdAndLessonsMap =
+    Map<Integer, List<LessonGroupWithLesson>> lessonGroupIdAndLessonsMap =
         allLessonsInTargetCourse.stream()
-            .sorted(Comparator.comparing(LessonGroupWithLessonAndTag::getLessonGroupOrder))
+            .sorted(Comparator.comparing(LessonGroupWithLesson::getLessonGroupOrder))
             .collect(
                 Collectors.groupingBy(
-                    LessonGroupWithLessonAndTag::getLessonGroupId,
+                    LessonGroupWithLesson::getLessonGroupId,
                     LinkedHashMap::new,
                     Collectors.toList()));
     return lessonGroupIdAndLessonsMap.values().stream()
@@ -153,7 +153,7 @@ public class UserLessonApplicationServiceImpl implements UserLessonApplicationSe
             allLessonsInTargetLessonGroup -> {
               List<UserLessonDto> userLessonDtos =
                   allLessonsInTargetLessonGroup.stream()
-                      .sorted(Comparator.comparing(LessonGroupWithLessonAndTag::getLessonOrder))
+                      .sorted(Comparator.comparing(LessonGroupWithLesson::getLessonOrder))
                       .map(
                           lesson ->
                               new UserLessonDto(

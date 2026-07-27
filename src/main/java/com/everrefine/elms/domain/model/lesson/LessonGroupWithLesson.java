@@ -2,12 +2,16 @@ package com.everrefine.elms.domain.model.lesson;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.lang.Nullable;
+
+import com.everrefine.elms.domain.model.tag.Tag;
 
 /** レッスングループとレッスンの情報を格納するクラス。 JOINクエリの結果をマッピングするために使用。 */
 @Getter
@@ -54,4 +58,7 @@ public class LessonGroupWithLesson {
 
   @Column("lesson_group_updated_at")
   private final LocalDateTime lessonGroupUpdatedAt;
+  
+  @Nullable
+  private final List<Tag> tags;
 }
