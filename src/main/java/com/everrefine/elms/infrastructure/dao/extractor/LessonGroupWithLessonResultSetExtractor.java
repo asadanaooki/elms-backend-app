@@ -13,18 +13,21 @@ import java.util.Map;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.stereotype.Component;
 
-@Component("LessonGroupWithLessonsResultSetExtractor")
+@Component("lessonGroupWithLessonResultSetExtractor")
 public class LessonGroupWithLessonResultSetExtractor
     implements ResultSetExtractor<List<LessonGroupWithLesson>> {
 
   @Override
   public List<LessonGroupWithLesson> extractData(ResultSet resultSet) throws SQLException {
-    Map<Integer, LessonGroupWithLesson> lessonsBylessonId =
-        new LinkedHashMap<Integer, LessonGroupWithLesson>();
+    Map<GroupAndLessonKey, LessonGroupWithLesson> lessonsByKey =
+        new LinkedHashMap<GroupAndLessonKey, LessonGroupWithLesson>();
 
     while (resultSet.next()) {
+      Integer groupId = resultSet.getObject("lesson_group_id", Integer.class);
       Integer lessonId = resultSet.getObject("lesson_id", Integer.class);
-      LessonGroupWithLesson lessonWithTags = lessonsBylessonId.get(lessonId);
+      GroupAndLessonKey key = new GroupAndLessonKey(groupId, lessonId);
+
+      LessonGroupWithLesson lessonWithTags = lessonsByKey.get(key);
 
       if (lessonWithTags == null) {
         lessonWithTags =
@@ -43,7 +46,7 @@ public class LessonGroupWithLessonResultSetExtractor
                 resultSet.getObject("lesson_group_created_at", LocalDateTime.class),
                 resultSet.getObject("lesson_group_updated_at", LocalDateTime.class),
                 new ArrayList<>());
-        lessonsBylessonId.put(lessonId, lessonWithTags);
+        lessonsByKey.put(key, lessonWithTags);
       }
       Integer tagId = resultSet.getObject("tag_id", Integer.class);
 
@@ -59,6 +62,8 @@ public class LessonGroupWithLessonResultSetExtractor
       }
     }
 
-    return new ArrayList<LessonGroupWithLesson>(lessonsBylessonId.values());
+    return new ArrayList<LessonGroupWithLesson>(lessonsByKey.values());
   }
+
+  private record GroupAndLessonKey(Integer groupId, Integer lessonId) {}
 }

@@ -2,6 +2,7 @@ package com.everrefine.elms.application.dto;
 
 import com.everrefine.elms.domain.model.tag.Tag;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -17,12 +18,12 @@ public class TagDto {
   private final String name;
 
   /**
-   * TagエンティティからTagDtoを生成する。
+   * 複数のTagエンティティからTagDto一覧を生成する。
    *
-   * @param tag タグエンティティ
-   * @return タグDTO
+   * @param tags 複数のタグエンティティ
+   * @return タグDTO一覧
    */
-  public static TagDto from(Tag tag) {
-    return new TagDto(tag.getId(), tag.getName().getValue());
+  public static List<TagDto> from(List<Tag> tags) {
+    return tags.stream().map(tag -> new TagDto(tag.getId(), tag.getName().getValue())).toList();
   }
 }

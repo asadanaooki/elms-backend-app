@@ -59,7 +59,7 @@ public class UserLessonDetailDto extends BaseLessonDto {
         lesson.getTitle().getValue(),
         lesson.getContent() != null ? lesson.getContent().getValue() : null,
         lesson.getVideoUrl() != null ? lesson.getVideoUrl().getValue() : null,
-        tags.stream().map(TagDto::from).toList(),
+        TagDto.from(tags),
         lesson.getCreatedAt(),
         lesson.getUpdatedAt(),
         isLessonCompleted);

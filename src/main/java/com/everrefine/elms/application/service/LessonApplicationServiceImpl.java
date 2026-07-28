@@ -127,8 +127,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     List<LessonGroupWithLesson> lessons =
         lessonRepository.findLessonsGroupedByLessonGroup(courseId);
     Map<Integer, List<LessonGroupWithLesson>> lessonGroupIdAndLessonsMap =
-        lessons.stream()
-            .collect(Collectors.groupingBy(LessonGroupWithLesson::getLessonGroupId));
+        lessons.stream().collect(Collectors.groupingBy(LessonGroupWithLesson::getLessonGroupId));
     List<LessonGroupDto> lessonGroupDtos =
         lessonGroupIdAndLessonsMap.values().stream().map(LessonGroupDto::from).toList();
     return new CourseLessonsDto(courseId, lessonGroupDtos);
