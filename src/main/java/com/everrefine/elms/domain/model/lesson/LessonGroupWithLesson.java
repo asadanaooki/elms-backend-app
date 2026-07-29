@@ -57,5 +57,5 @@ public class LessonGroupWithLesson {
   @Column("lesson_group_updated_at")
   private final LocalDateTime lessonGroupUpdatedAt;
 
-  @Nullable private final List<Tag> tags;
+  private final List<Tag> tags;
 }

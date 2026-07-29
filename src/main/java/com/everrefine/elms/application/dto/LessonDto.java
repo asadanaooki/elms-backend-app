@@ -35,7 +35,7 @@ public class LessonDto extends BaseLessonDto {
   /**
    * LessonGroupWithLessonからLessonDtoを生成する。
    *
-   * @param LessonGroupWithLesson レッスングループとレッスンの結合情報
+   * @param lessonGroupWithLesson レッスングループとレッスンの結合情報
    * @return レッスンDTO
    */
   public static LessonDto from(LessonGroupWithLesson lessonGroupWithLesson) {

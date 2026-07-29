@@ -487,6 +487,106 @@ public class UserLessonApplicationServiceImplTest {
   }
 
   @Test
+  void 正常系_完了済みレッスンが存在しないとき全レッスンが未完了として取得できること() {
+    // Arrange
+    Integer courseId = createCourse(new BigDecimal("1"), "UL完了レッスンなしコース", "完了済みレッスンがないコース");
+    Integer lessonGroupId = createLessonGroup(courseId, new BigDecimal("1"), "UL完了レッスンなしグループ");
+    Integer lessonId1 =
+        createLesson(lessonGroupId, courseId, new BigDecimal("1"), "UL未完了レッスン1", "未完了レッスン1", null);
+    Integer lessonId2 =
+        createLesson(lessonGroupId, courseId, new BigDecimal("2"), "UL未完了レッスン2", "未完了レッスン2", null);
+    Integer userId =
+        createUser(
+            "ul-no-completed-lessons@example.com", "password", "未完了 太郎", "ulnocomplete", "GENERAL");
+
+    // Act
+    List<UserLessonGroupDto> result =
+        userLessonApplicationService.findUserLessons(userId, courseId);
+
+    // Assert
+    assertEquals(1, result.size());
+    assertEquals(
+        List.of(lessonId1, lessonId2),
+        result.getFirst().userLessons().stream()
+            .map(userLesson -> userLesson.lesson().getId())
+            .toList());
+    assertTrue(
+        result.getFirst().userLessons().stream()
+            .noneMatch(userLesson -> userLesson.isLessonCompleted()));
+  }
+
+  @Test
+  void 正常系_タグありタグなしレッスンとレッスンなしグループを正しく取得できること() {
+    // Arrange
+    Integer courseId =
+        createCourse(new BigDecimal("1"), "ULExtractor確認コース", "Extractorの集約を確認するコース");
+    Integer taggedLessonGroupId = createLessonGroup(courseId, new BigDecimal("1"), "ULタグありグループ");
+    Integer untaggedLessonGroupId = createLessonGroup(courseId, new BigDecimal("2"), "ULタグなしグループ");
+    Integer emptyLessonGroupId1 = createLessonGroup(courseId, new BigDecimal("3"), "ULレッスンなしグループ1");
+    Integer emptyLessonGroupId2 = createLessonGroup(courseId, new BigDecimal("4"), "ULレッスンなしグループ2");
+
+    Integer taggedLessonId1 =
+        createLesson(
+            taggedLessonGroupId, courseId, new BigDecimal("1"), "ULタグありレッスン1", "タグありレッスン1", null);
+    Integer taggedLessonId2 =
+        createLesson(
+            taggedLessonGroupId, courseId, new BigDecimal("2"), "ULタグありレッスン2", "タグありレッスン2", null);
+    Integer untaggedLessonId1 =
+        createLesson(
+            untaggedLessonGroupId, courseId, new BigDecimal("1"), "ULタグなしレッスン1", "タグなしレッスン1", null);
+    Integer untaggedLessonId2 =
+        createLesson(
+            untaggedLessonGroupId, courseId, new BigDecimal("2"), "ULタグなしレッスン2", "タグなしレッスン2", null);
+
+    Integer taggedLesson1TagId1 = createTag("ULタグありレッスン1タグ1");
+    Integer taggedLesson1TagId2 = createTag("ULタグありレッスン1タグ2");
+    Integer taggedLesson2TagId = createTag("ULタグありレッスン2タグ");
+    createLessonTag(taggedLessonId1, taggedLesson1TagId2);
+    createLessonTag(taggedLessonId1, taggedLesson1TagId1);
+    createLessonTag(taggedLessonId2, taggedLesson2TagId);
+
+    Integer userId =
+        createUser("ul-extractor@example.com", "password", "抽出 太郎", "ulextractor", "GENERAL");
+
+    // Act
+    List<UserLessonGroupDto> result =
+        userLessonApplicationService.findUserLessons(userId, courseId);
+
+    // Assert
+    assertEquals(
+        List.of(
+            taggedLessonGroupId, untaggedLessonGroupId, emptyLessonGroupId1, emptyLessonGroupId2),
+        result.stream().map(UserLessonGroupDto::id).toList());
+    assertEquals(
+        List.of(2, 2, 0, 0), result.stream().map(group -> group.userLessons().size()).toList());
+
+    assertEquals(
+        List.of(taggedLessonId1, taggedLessonId2, untaggedLessonId1, untaggedLessonId2),
+        result.stream()
+            .flatMap(group -> group.userLessons().stream())
+            .map(userLesson -> userLesson.lesson().getId())
+            .toList());
+    assertTrue(
+        result.stream()
+            .flatMap(group -> group.userLessons().stream())
+            .allMatch(userLesson -> userLesson.lesson().getId() != null));
+
+    var taggedLesson1Tags = result.get(0).userLessons().get(0).lesson().getTags();
+    assertEquals(
+        List.of(taggedLesson1TagId1, taggedLesson1TagId2),
+        taggedLesson1Tags.stream().map(TagDto::getId).toList());
+    assertEquals("ULタグありレッスン1タグ1", taggedLesson1Tags.getFirst().getName());
+
+    var taggedLesson2Tags = result.get(0).userLessons().get(1).lesson().getTags();
+    assertEquals(
+        List.of(taggedLesson2TagId), taggedLesson2Tags.stream().map(TagDto::getId).toList());
+    assertEquals("ULタグありレッスン2タグ", taggedLesson2Tags.getFirst().getName());
+
+    assertTrue(result.get(1).userLessons().get(0).lesson().getTags().isEmpty());
+    assertTrue(result.get(1).userLessons().get(1).lesson().getTags().isEmpty());
+  }
+
+  @Test
   void 異常系_ユーザーが存在しないとき例外になること() {
     // Arrange
     Integer courseId = createCourse(new BigDecimal("1"), "はじめ", "コース１");
