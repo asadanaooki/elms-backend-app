@@ -15,33 +15,41 @@ import org.springframework.stereotype.Repository;
 public interface LessonGroupDao extends CrudRepository<LessonGroup, Integer> {
 
   @Query(
-      """
-      SELECT
-        l.id as lesson_id,
-        l.title as lesson_title,
-        l.lesson_order,
-        l.content as lesson_content,
-        l.video_url as lesson_video_url,
-        l.created_at as lesson_created_at,
-        l.updated_at as lesson_updated_at,
-        lg.id as lesson_group_id,
-        lg.course_id as course_id,
-        lg.title as lesson_group_title,
-        lg.lesson_group_order,
-        lg.created_at as lesson_group_created_at,
-        lg.updated_at as lesson_group_updated_at
-      FROM lesson_groups lg
-      LEFT JOIN lessons l ON lg.id = l.lesson_group_id
-      WHERE lg.course_id = :courseId
-      ORDER BY lg.lesson_group_order ASC, l.lesson_order ASC
-      """)
+      resultSetExtractorRef = "lessonGroupWithLessonResultSetExtractor",
+      value =
+          """
+            SELECT
+              l.id as lesson_id,
+              l.title as lesson_title,
+              l.lesson_order,
+              l.content as lesson_content,
+              l.video_url as lesson_video_url,
+              l.created_at as lesson_created_at,
+              l.updated_at as lesson_updated_at,
+              lg.id as lesson_group_id,
+              lg.course_id as course_id,
+              lg.title as lesson_group_title,
+              lg.lesson_group_order,
+              lg.created_at as lesson_group_created_at,
+              lg.updated_at as lesson_group_updated_at,
+              t.id as tag_id,
+              t.name as tag_name,
+              t.created_at as tag_created_at,
+              t.updated_at as tag_updated_at
+            FROM lesson_groups lg
+            LEFT JOIN lessons l ON lg.id = l.lesson_group_id
+            LEFT JOIN lesson_tags lt ON l.id = lt.lesson_id
+            LEFT JOIN tags t ON lt.tag_id = t.id
+            WHERE lg.course_id = :courseId
+            ORDER BY lg.lesson_group_order ASC, l.lesson_order ASC, t.id ASC
+            """)
   List<LessonGroupWithLesson> findLessonGroupsByCourseId(@Param("courseId") Integer courseId);
 
   @Query(
       """
-      SELECT MAX(lesson_group_order)
-      FROM lesson_groups
-      WHERE course_id = :courseId
-      """)
+            SELECT MAX(lesson_group_order)
+            FROM lesson_groups
+            WHERE course_id = :courseId
+            """)
   Optional<BigDecimal> findMaxLessonGroupOrderByCourseId(@Param("courseId") Integer courseId);
 }

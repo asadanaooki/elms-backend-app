@@ -9,7 +9,6 @@ import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.LessonGroupDto;
 import com.everrefine.elms.application.dto.LessonPageDto;
 import com.everrefine.elms.application.dto.LessonWithCourseAndLessonGroupDto;
-import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.LessonTag;
 import com.everrefine.elms.domain.model.lesson.Lesson;
@@ -46,11 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class LessonApplicationServiceImpl implements LessonApplicationService {
 
   private final LessonRepository lessonRepository;
-
   private final LessonDomainService lessonDomainService;
-
   private final LessonTagRepository lessonTagRepository;
-
   private final TagRepository tagRepository;
 
   /**
@@ -78,7 +74,8 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   @Transactional(readOnly = true)
   public LessonDto findLessonById(Integer courseId, Integer lessonGroupId, Integer lessonId) {
     Lesson lesson = findLessonBelongingToCourseAndGroupOrThrow(lessonId, courseId, lessonGroupId);
-    return LessonDto.from(lesson, Collections.emptyList());
+    List<Tag> tagsByLessonId = tagRepository.findAllTagsByLessonId(lessonId);
+    return LessonDto.from(lesson, tagsByLessonId);
   }
 
   @Override
@@ -153,9 +150,9 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson updatedLesson =
         lessonRepository.updateLesson(lessonUpdateCommand.toLesson(currentLesson));
 
-    List<TagDto> associatedTagDtos = replaceLessonTags(lessonId, lessonUpdateCommand.getTagNames());
+    List<Tag> associatedTags = replaceLessonTags(lessonId, lessonUpdateCommand.getTagNames());
 
-    return LessonDto.from(updatedLesson, associatedTagDtos);
+    return LessonDto.from(updatedLesson, associatedTags);
   }
 
   @Override
@@ -282,7 +279,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     return new ByteArrayResource(baos.toByteArray());
   }
 
-  private List<TagDto> replaceLessonTags(Integer lessonId, List<String> requestedTagNames) {
+  private List<Tag> replaceLessonTags(Integer lessonId, List<String> requestedTagNames) {
     Map<String, Tag> uniqueTagsByName = new LinkedHashMap<>();
     requestedTagNames.stream()
         .map(Tag::create)
@@ -313,7 +310,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
         tagsInRequestOrder.stream().map(t -> LessonTag.create(lessonId, t.getId())).toList();
     lessonTagRepository.saveAll(lessonTagAssociations);
 
-    return toTagDtos(tagsInRequestOrder);
+    return tagsInRequestOrder;
   }
 
   private List<Tag> findTagsInRequestOrder(List<Tag> normalizedTags) {
@@ -324,9 +321,5 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
             .collect(Collectors.toMap(Tag::getName, Function.identity()));
 
     return normalizedTags.stream().map(t -> persistedTagsByName.get(t.getName())).toList();
-  }
-
-  private List<TagDto> toTagDtos(List<Tag> tags) {
-    return tags.stream().map(t -> new TagDto(t.getId(), t.getName().getValue())).toList();
   }
 }

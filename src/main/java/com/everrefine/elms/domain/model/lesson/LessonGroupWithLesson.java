@@ -1,7 +1,9 @@
 package com.everrefine.elms.domain.model.lesson;
 
+import com.everrefine.elms.domain.model.tag.Tag;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.data.annotation.Id;
@@ -54,4 +56,6 @@ public class LessonGroupWithLesson {
 
   @Column("lesson_group_updated_at")
   private final LocalDateTime lessonGroupUpdatedAt;
+
+  private final List<Tag> tags;
 }

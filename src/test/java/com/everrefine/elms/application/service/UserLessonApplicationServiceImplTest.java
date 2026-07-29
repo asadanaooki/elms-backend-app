@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.everrefine.elms.application.command.UserLessonCompletionStatusUpdateCommand;
+import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.dto.UserLessonDetailDto;
 import com.everrefine.elms.application.dto.UserLessonGroupDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
@@ -140,6 +141,30 @@ public class UserLessonApplicationServiceImplTest {
         LocalDateTime.now());
   }
 
+  public Integer createTag(String name) {
+    jdbcTemplate.update(
+        """
+            INSERT INTO tags (name, created_at, updated_at)
+            VALUES (?, ?, ?)
+            """,
+        name,
+        LocalDateTime.now(),
+        LocalDateTime.now());
+    return jdbcTemplate.queryForObject("SELECT id FROM tags WHERE name = ?", Integer.class, name);
+  }
+
+  public void createLessonTag(Integer lessonId, Integer tagId) {
+    jdbcTemplate.update(
+        """
+            INSERT INTO lesson_tags (lesson_id, tag_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+            """,
+        lessonId,
+        tagId,
+        LocalDateTime.now(),
+        LocalDateTime.now());
+  }
+
   @Test
   void 正常系_レッスン詳細取得で未完了の場合isLessonCompletedがfalseになること() {
     Integer courseId = createCourse(new BigDecimal("1"), "ULテストコース", "コース説明");
@@ -153,6 +178,7 @@ public class UserLessonApplicationServiceImplTest {
             "説明",
             "https://example.com/video.mp4");
     Integer userId = createUser("ul-not-done@example.com", "p", "太郎", "ulnd", "GENERAL");
+    createTag("UL未完了紐づかないタグ");
 
     UserLessonDetailDto result =
         userLessonApplicationService.findUserLessonDetail(
@@ -161,6 +187,7 @@ public class UserLessonApplicationServiceImplTest {
     assertNotNull(result);
     assertEquals(lessonId, result.getId());
     assertFalse(result.isLessonCompleted());
+    assertTrue(result.getTags().isEmpty());
   }
 
   @Test
@@ -177,6 +204,13 @@ public class UserLessonApplicationServiceImplTest {
             "https://example.com/video.mp4");
     Integer userId = createUser("ul-done@example.com", "p", "次郎", "uld", "GENERAL");
     createUserLesson(userId, lessonId);
+    Integer tag1Id = createTag("UL完了タグ1");
+    Integer tag2Id = createTag("UL完了タグ2");
+    Integer tag3Id = createTag("UL完了タグ3");
+    createTag("UL完了紐づかないタグ");
+    createLessonTag(lessonId, tag3Id);
+    createLessonTag(lessonId, tag1Id);
+    createLessonTag(lessonId, tag2Id);
 
     UserLessonDetailDto result =
         userLessonApplicationService.findUserLessonDetail(
@@ -185,6 +219,11 @@ public class UserLessonApplicationServiceImplTest {
     assertNotNull(result);
     assertEquals(lessonId, result.getId());
     assertTrue(result.isLessonCompleted());
+    List<TagDto> tags = result.getTags();
+    assertEquals(3, tags.size());
+    assertEquals(List.of(tag1Id, tag2Id, tag3Id), tags.stream().map(TagDto::getId).toList());
+    assertEquals(tag1Id, tags.get(0).getId());
+    assertEquals("UL完了タグ1", tags.get(0).getName());
   }
 
   @Test
@@ -390,6 +429,14 @@ public class UserLessonApplicationServiceImplTest {
     createUserLesson(userId, lessonId1);
     createUserLesson(userId, lessonId3);
     createUserLesson(userId, lessonId4);
+    Integer lesson1FirstTagId = createTag("ULレッスン1タグ1");
+    Integer lesson1SecondTagId = createTag("ULレッスン1タグ2");
+    Integer lesson3TagId = createTag("ULレッスン3タグ");
+    Integer lesson4TagId = createTag("ULレッスン4タグ");
+    createLessonTag(lessonId1, lesson1SecondTagId);
+    createLessonTag(lessonId1, lesson1FirstTagId);
+    createLessonTag(lessonId3, lesson3TagId);
+    createLessonTag(lessonId4, lesson4TagId);
     // Act
     List<UserLessonGroupDto> userLessonGroupDto =
         userLessonApplicationService.findUserLessons(userId, courseId1);
@@ -413,9 +460,130 @@ public class UserLessonApplicationServiceImplTest {
     // レッスン順番になっていること
     assertEquals(lessonId1, userLessonGroupDto.getFirst().userLessons().get(0).lesson().getId());
     assertEquals(lessonId2, userLessonGroupDto.getFirst().userLessons().get(1).lesson().getId());
+    // 各レッスンに紐づくタグが取得できること
+    var lesson1Tags = userLessonGroupDto.getFirst().userLessons().get(0).lesson().getTags();
+    assertEquals(2, lesson1Tags.size());
+    assertEquals(
+        List.of(lesson1FirstTagId, lesson1SecondTagId),
+        lesson1Tags.stream().map(tag -> tag.getId()).toList());
+    assertEquals(lesson1FirstTagId, lesson1Tags.getFirst().getId());
+    assertEquals("ULレッスン1タグ1", lesson1Tags.getFirst().getName());
+
+    var lesson2Tags = userLessonGroupDto.getFirst().userLessons().get(1).lesson().getTags();
+    assertEquals(0, lesson2Tags.size());
+
+    var lesson3Tags = userLessonGroupDto.get(1).userLessons().getFirst().lesson().getTags();
+    assertEquals(1, lesson3Tags.size());
+    assertEquals(lesson3TagId, lesson3Tags.getFirst().getId());
+    assertEquals("ULレッスン3タグ", lesson3Tags.getFirst().getName());
+
+    var lesson4Tags = userLessonGroupDto2.getFirst().userLessons().getFirst().lesson().getTags();
+    assertEquals(1, lesson4Tags.size());
+    assertEquals(lesson4TagId, lesson4Tags.getFirst().getId());
+    assertEquals("ULレッスン4タグ", lesson4Tags.getFirst().getName());
     // 別コースは混ざらないこと
     assertEquals(2, userLessonGroupDto.size());
     assertEquals(lessonGroupId3, userLessonGroupDto2.getFirst().id());
+  }
+
+  @Test
+  void 正常系_完了済みレッスンが存在しないとき全レッスンが未完了として取得できること() {
+    // Arrange
+    Integer courseId = createCourse(new BigDecimal("1"), "UL完了レッスンなしコース", "完了済みレッスンがないコース");
+    Integer lessonGroupId = createLessonGroup(courseId, new BigDecimal("1"), "UL完了レッスンなしグループ");
+    Integer lessonId1 =
+        createLesson(lessonGroupId, courseId, new BigDecimal("1"), "UL未完了レッスン1", "未完了レッスン1", null);
+    Integer lessonId2 =
+        createLesson(lessonGroupId, courseId, new BigDecimal("2"), "UL未完了レッスン2", "未完了レッスン2", null);
+    Integer userId =
+        createUser(
+            "ul-no-completed-lessons@example.com", "password", "未完了 太郎", "ulnocomplete", "GENERAL");
+
+    // Act
+    List<UserLessonGroupDto> result =
+        userLessonApplicationService.findUserLessons(userId, courseId);
+
+    // Assert
+    assertEquals(1, result.size());
+    assertEquals(
+        List.of(lessonId1, lessonId2),
+        result.getFirst().userLessons().stream()
+            .map(userLesson -> userLesson.lesson().getId())
+            .toList());
+    assertTrue(
+        result.getFirst().userLessons().stream()
+            .noneMatch(userLesson -> userLesson.isLessonCompleted()));
+  }
+
+  @Test
+  void 正常系_タグありタグなしレッスンとレッスンなしグループを正しく取得できること() {
+    // Arrange
+    Integer courseId =
+        createCourse(new BigDecimal("1"), "ULExtractor確認コース", "Extractorの集約を確認するコース");
+    Integer taggedLessonGroupId = createLessonGroup(courseId, new BigDecimal("1"), "ULタグありグループ");
+    Integer untaggedLessonGroupId = createLessonGroup(courseId, new BigDecimal("2"), "ULタグなしグループ");
+    Integer emptyLessonGroupId1 = createLessonGroup(courseId, new BigDecimal("3"), "ULレッスンなしグループ1");
+    Integer emptyLessonGroupId2 = createLessonGroup(courseId, new BigDecimal("4"), "ULレッスンなしグループ2");
+
+    Integer taggedLessonId1 =
+        createLesson(
+            taggedLessonGroupId, courseId, new BigDecimal("1"), "ULタグありレッスン1", "タグありレッスン1", null);
+    Integer taggedLessonId2 =
+        createLesson(
+            taggedLessonGroupId, courseId, new BigDecimal("2"), "ULタグありレッスン2", "タグありレッスン2", null);
+    Integer untaggedLessonId1 =
+        createLesson(
+            untaggedLessonGroupId, courseId, new BigDecimal("1"), "ULタグなしレッスン1", "タグなしレッスン1", null);
+    Integer untaggedLessonId2 =
+        createLesson(
+            untaggedLessonGroupId, courseId, new BigDecimal("2"), "ULタグなしレッスン2", "タグなしレッスン2", null);
+
+    Integer taggedLesson1TagId1 = createTag("ULタグありレッスン1タグ1");
+    Integer taggedLesson1TagId2 = createTag("ULタグありレッスン1タグ2");
+    Integer taggedLesson2TagId = createTag("ULタグありレッスン2タグ");
+    createLessonTag(taggedLessonId1, taggedLesson1TagId2);
+    createLessonTag(taggedLessonId1, taggedLesson1TagId1);
+    createLessonTag(taggedLessonId2, taggedLesson2TagId);
+
+    Integer userId =
+        createUser("ul-extractor@example.com", "password", "抽出 太郎", "ulextractor", "GENERAL");
+
+    // Act
+    List<UserLessonGroupDto> result =
+        userLessonApplicationService.findUserLessons(userId, courseId);
+
+    // Assert
+    assertEquals(
+        List.of(
+            taggedLessonGroupId, untaggedLessonGroupId, emptyLessonGroupId1, emptyLessonGroupId2),
+        result.stream().map(UserLessonGroupDto::id).toList());
+    assertEquals(
+        List.of(2, 2, 0, 0), result.stream().map(group -> group.userLessons().size()).toList());
+
+    assertEquals(
+        List.of(taggedLessonId1, taggedLessonId2, untaggedLessonId1, untaggedLessonId2),
+        result.stream()
+            .flatMap(group -> group.userLessons().stream())
+            .map(userLesson -> userLesson.lesson().getId())
+            .toList());
+    assertTrue(
+        result.stream()
+            .flatMap(group -> group.userLessons().stream())
+            .allMatch(userLesson -> userLesson.lesson().getId() != null));
+
+    var taggedLesson1Tags = result.get(0).userLessons().get(0).lesson().getTags();
+    assertEquals(
+        List.of(taggedLesson1TagId1, taggedLesson1TagId2),
+        taggedLesson1Tags.stream().map(TagDto::getId).toList());
+    assertEquals("ULタグありレッスン1タグ1", taggedLesson1Tags.getFirst().getName());
+
+    var taggedLesson2Tags = result.get(0).userLessons().get(1).lesson().getTags();
+    assertEquals(
+        List.of(taggedLesson2TagId), taggedLesson2Tags.stream().map(TagDto::getId).toList());
+    assertEquals("ULタグありレッスン2タグ", taggedLesson2Tags.getFirst().getName());
+
+    assertTrue(result.get(1).userLessons().get(0).lesson().getTags().isEmpty());
+    assertTrue(result.get(1).userLessons().get(1).lesson().getTags().isEmpty());
   }
 
   @Test

@@ -1,11 +1,12 @@
 package com.everrefine.elms.application.dto;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
+import com.everrefine.elms.domain.model.tag.Tag;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.List;
 import lombok.Getter;
 
 /** ユーザーレッスン詳細。 */
@@ -24,6 +25,7 @@ public class UserLessonDetailDto extends BaseLessonDto {
       String title,
       String content,
       String videoUrl,
+      List<TagDto> tags,
       LocalDateTime createdAt,
       LocalDateTime updatedAt,
       boolean lessonCompleted) {
@@ -35,7 +37,7 @@ public class UserLessonDetailDto extends BaseLessonDto {
         title,
         content,
         videoUrl,
-        Collections.emptyList(),
+        tags,
         createdAt,
         updatedAt);
     this.lessonCompleted = lessonCompleted;
@@ -48,7 +50,7 @@ public class UserLessonDetailDto extends BaseLessonDto {
    * @param isLessonCompleted レッスン完了フラグ
    * @return ユーザーレッスン詳細DTO
    */
-  public static UserLessonDetailDto from(Lesson lesson, boolean isLessonCompleted) {
+  public static UserLessonDetailDto from(Lesson lesson, List<Tag> tags, boolean isLessonCompleted) {
     return new UserLessonDetailDto(
         lesson.getId(),
         lesson.getLessonGroupId(),
@@ -57,6 +59,7 @@ public class UserLessonDetailDto extends BaseLessonDto {
         lesson.getTitle().getValue(),
         lesson.getContent() != null ? lesson.getContent().getValue() : null,
         lesson.getVideoUrl() != null ? lesson.getVideoUrl().getValue() : null,
+        TagDto.from(tags),
         lesson.getCreatedAt(),
         lesson.getUpdatedAt(),
         isLessonCompleted);

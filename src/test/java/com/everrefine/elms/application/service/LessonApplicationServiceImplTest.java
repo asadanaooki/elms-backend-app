@@ -165,6 +165,7 @@ public class LessonApplicationServiceImplTest {
                 INSERT INTO tags (
                 name, created_at, updated_at
                 ) VALUES (?, ?, ?)
+                ON CONFLICT (name) DO NOTHING
                 """,
         name,
         LocalDateTime.now(),
@@ -199,6 +200,11 @@ public class LessonApplicationServiceImplTest {
             "テストレッスン",
             "テスト説明",
             "https://example.com/video.mp4");
+    Integer tag1Id = createTag("タグ1");
+    Integer tag2Id = createTag("タグ2");
+    Integer unassociatedTagId = createTag("タグ3");
+    createLessonTag(lessonId, tag2Id);
+    createLessonTag(lessonId, tag1Id);
 
     // Act
     LessonDto result = lessonApplicationService.findLessonById(courseId, lessonGroupId, lessonId);
@@ -212,6 +218,10 @@ public class LessonApplicationServiceImplTest {
     assertEquals("テストレッスン", result.getTitle());
     assertEquals("テスト説明", result.getContent());
     assertEquals("https://example.com/video.mp4", result.getVideoUrl());
+    assertEquals(2, result.getTags().size());
+    assertEquals(List.of(tag1Id, tag2Id), result.getTags().stream().map(TagDto::getId).toList());
+    assertEquals(List.of("タグ1", "タグ2"), result.getTags().stream().map(TagDto::getName).toList());
+    assertTrue(result.getTags().stream().noneMatch(tag -> tag.getId().equals(unassociatedTagId)));
     assertNotNull(result.getCreatedAt());
     assertNotNull(result.getUpdatedAt());
   }
@@ -293,14 +303,51 @@ public class LessonApplicationServiceImplTest {
   void 正常系_コース別レッスン一覧を取得できること() {
     // Arrange - テストデータを準備（IDは自動生成）
     Integer courseId = createCourse(new BigDecimal("1"), "テストコース", "コース説明");
-    createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+    Integer lessonGroupId = createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+
+    Integer lessonCId =
+        createLesson(
+            lessonGroupId,
+            courseId,
+            new BigDecimal("2"),
+            "レッスンC",
+            "レッスンCの説明",
+            "https://example.com/lesson-c.mp4");
+    Integer lessonBId =
+        createLesson(
+            lessonGroupId,
+            courseId,
+            new BigDecimal("1"),
+            "レッスンB",
+            "レッスンBの説明",
+            "https://example.com/lesson-b.mp4");
+
+    Integer tag1Id = createTag("タグ1");
+    Integer tag2Id = createTag("タグ2");
+    Integer tag3Id = createTag("タグ3");
+    createLessonTag(lessonCId, tag1Id);
+    createLessonTag(lessonCId, tag2Id);
+    createLessonTag(lessonCId, tag3Id);
 
     // Act
     CourseLessonsDto result = lessonApplicationService.findLessonsGroupedByLessonGroup(courseId);
 
     // Assert
     assertNotNull(result);
-    assertNotNull(result.lessonGroups());
+    assertEquals(courseId, result.courseId());
+    assertEquals(1, result.lessonGroups().size());
+
+    List<LessonDto> lessons = result.lessonGroups().getFirst().lessons();
+    assertEquals(2, lessons.size());
+    assertEquals(List.of(lessonBId, lessonCId), lessons.stream().map(LessonDto::getId).toList());
+
+    List<TagDto> lessonBTags = lessons.get(0).getTags();
+    assertTrue(lessonBTags.isEmpty());
+
+    List<TagDto> lessonCTags = lessons.get(1).getTags();
+    assertEquals(3, lessonCTags.size());
+    assertEquals(List.of(tag1Id, tag2Id, tag3Id), lessonCTags.stream().map(TagDto::getId).toList());
+    assertEquals(List.of("タグ1", "タグ2", "タグ3"), lessonCTags.stream().map(TagDto::getName).toList());
   }
 
   @Test
@@ -407,9 +454,18 @@ public class LessonApplicationServiceImplTest {
             "SELECT content FROM lessons WHERE id = ?", String.class, lessonId);
     assertEquals("更新後説明", updatedContent);
     List<String> updatedTags =
-        jdbcTemplate.queryForList("SELECT name FROM tags order by id", String.class);
+        jdbcTemplate.queryForList(
+            """
+                SELECT t.name
+                FROM lesson_tags lt
+                JOIN tags t ON t.id = lt.tag_id
+                WHERE lt.lesson_id = ?
+                ORDER BY lt.id
+                """,
+            String.class,
+            lessonId);
     assertEquals(3, updatedTags.size());
-    assertEquals(List.of("Java", "Spring", "中級編"), updatedTags);
+    assertEquals(List.of("Spring", "Java", "中級編"), updatedTags);
 
     List<Integer> tagIds =
         jdbcTemplate.queryForList(
@@ -479,13 +535,18 @@ public class LessonApplicationServiceImplTest {
     assertTrue(result.getTags().isEmpty());
 
     // タグに関するデータが変わっていないことを確認
-    List<Tag> tagList = jdbcTemplate.query("SELECT * FROM tags", new DataClassRowMapper(Tag.class));
+    List<Tag> tagList =
+        jdbcTemplate.query(
+            "SELECT * FROM tags WHERE id = ?", new DataClassRowMapper(Tag.class), tagId);
     assertEquals(1, tagList.size());
     assertEquals(tagId, tagList.get(0).getId());
     assertEquals("Java", tagList.get(0).getName().getValue());
 
     List<LessonTag> lessonTagList =
-        jdbcTemplate.query("SELECT * FROM lesson_tags", new DataClassRowMapper(LessonTag.class));
+        jdbcTemplate.query(
+            "SELECT * FROM lesson_tags WHERE lesson_id = ?",
+            new DataClassRowMapper(LessonTag.class),
+            lessonId);
     assertEquals(0, lessonTagList.size());
   }
 
@@ -526,7 +587,16 @@ public class LessonApplicationServiceImplTest {
 
     // DBが更新されていることを確認
     List<String> updatedTags =
-        jdbcTemplate.queryForList("SELECT name FROM tags ORDER BY id", String.class);
+        jdbcTemplate.queryForList(
+            """
+                SELECT t.name
+                FROM lesson_tags lt
+                JOIN tags t ON t.id = lt.tag_id
+                WHERE lt.lesson_id = ?
+                ORDER BY lt.id
+                """,
+            String.class,
+            lessonId);
     assertEquals(3, updatedTags.size());
 
     assertArrayEquals(expectedTags, updatedTags.toArray());
