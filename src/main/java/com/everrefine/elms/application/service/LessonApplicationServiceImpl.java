@@ -218,7 +218,9 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson updatedLesson = targetLesson.updateOrder(newOrder);
     Lesson savedLesson = lessonRepository.updateLesson(updatedLesson);
 
-    return LessonDto.from(savedLesson, Collections.emptyList());
+    List<Tag> tags = tagRepository.findAllTagsByLessonId(targetLessonId);
+
+    return LessonDto.from(savedLesson, tags);
   }
 
   @Transactional(readOnly = true)

@@ -729,6 +729,53 @@ public class LessonApplicationServiceImplTest {
   }
 
   @Test
+  void 正常系_並び替え後のレスポンスに対象レッスンのタグが含まれること() {
+    // Arrange
+    Integer courseId = createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+    Integer lessonGroupId = createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+    Integer targetLessonId =
+        createLesson(
+            lessonGroupId,
+            courseId,
+            new BigDecimal("1000"),
+            "並び替え対象レッスン",
+            "説明1",
+            "https://example.com/video1.mp4");
+    Integer otherLessonId =
+        createLesson(
+            lessonGroupId,
+            courseId,
+            new BigDecimal("2000"),
+            "別のレッスン",
+            "説明2",
+            "https://example.com/video2.mp4");
+
+    Integer tag1Id = createTag("タグ1");
+    Integer tag2Id = createTag("タグ2");
+    Integer tag3Id = createTag("タグ3");
+    Integer otherLessonTagId = createTag("別レッスンのタグ");
+    createLessonTag(targetLessonId, tag3Id);
+    createLessonTag(targetLessonId, tag1Id);
+    createLessonTag(targetLessonId, tag2Id);
+    createLessonTag(otherLessonId, otherLessonTagId);
+
+    LessonOrderUpdateRequest request = new LessonOrderUpdateRequest();
+    request.setPrecedingLessonId(otherLessonId);
+    request.setFollowingLessonId(null);
+
+    // Act
+    LessonDto result =
+        lessonApplicationService.updateLessonOrder(request.toCommand(targetLessonId));
+
+    // Assert
+    assertEquals(
+        List.of(tag1Id, tag2Id, tag3Id), result.getTags().stream().map(TagDto::getId).toList());
+    assertEquals(tag1Id, result.getTags().get(0).getId());
+    assertEquals("タグ1", result.getTags().get(0).getName());
+    assertTrue(result.getTags().stream().noneMatch(tag -> tag.getId().equals(otherLessonTagId)));
+  }
+
+  @Test
   void 正常系_先頭に移動できること() {
     // Arrange - テストデータを準備
     Integer courseId = createCourse(new BigDecimal("1"), "テストコース", "コース説明");
