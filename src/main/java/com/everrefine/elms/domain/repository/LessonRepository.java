@@ -4,6 +4,7 @@ import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.lesson.LessonSearchCriteria;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
+import com.everrefine.elms.domain.model.lesson.LessonWithTag;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +50,7 @@ public interface LessonRepository {
    * @param lessonGroupId レッスングループID
    * @return レッスン一覧
    */
-  List<Lesson> findLessonsByLessonGroupId(Integer lessonGroupId);
+  List<LessonWithTag> findLessonsByLessonGroupId(Integer lessonGroupId);
 
   /**
    * コースIDに紐づくレッスングループごとのレッスン一覧を取得する。

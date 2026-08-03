@@ -2,6 +2,7 @@ package com.everrefine.elms.application.dto;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
+import com.everrefine.elms.domain.model.lesson.LessonWithTag;
 import com.everrefine.elms.domain.model.tag.Tag;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -50,6 +51,26 @@ public class LessonDto extends BaseLessonDto {
         TagDto.from(lessonGroupWithLesson.getTags()),
         lessonGroupWithLesson.getLessonCreatedAt(),
         lessonGroupWithLesson.getLessonUpdatedAt());
+  }
+
+  /**
+   * LessonWithTagからLessonDtoを生成する。
+   *
+   * @param lessonWithTag レッスンとタグの結合情報
+   * @return レッスンDTO
+   */
+  public static LessonDto from(LessonWithTag lessonWithTag) {
+    return new LessonDto(
+        lessonWithTag.getLessonId(),
+        lessonWithTag.getLessonGroupId(),
+        lessonWithTag.getCourseId(),
+        lessonWithTag.getLessonOrder(),
+        lessonWithTag.getLessonTitle(),
+        lessonWithTag.getLessonContent(),
+        lessonWithTag.getLessonVideoUrl(),
+        TagDto.from(lessonWithTag.getTags()),
+        lessonWithTag.getLessonCreatedAt(),
+        lessonWithTag.getLessonUpdatedAt());
   }
 
   private LessonDto(
