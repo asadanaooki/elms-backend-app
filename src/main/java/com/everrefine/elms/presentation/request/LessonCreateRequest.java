@@ -2,9 +2,14 @@ package com.everrefine.elms.presentation.request;
 
 import com.everrefine.elms.application.command.LessonCreateCommand;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.Collections;
+import java.util.List;
 import lombok.Data;
+import org.springframework.util.CollectionUtils;
 
 /** レッスン作成リクエストに関するクラス。 */
 @Data
@@ -23,6 +28,10 @@ public class LessonCreateRequest {
   @Size(max = 2048, message = "動画URLは2048文字以内で入力してください")
   private String videoUrl;
 
+  @Schema(description = "タグ一覧")
+  @Size(max = 50, message = "登録できるタグの数は50個以内です。")
+  private List<@NotNull @Valid LessonTagRequest> tags;
+
   /**
    * Commandオブジェクトに変換する。
    *
@@ -31,6 +40,19 @@ public class LessonCreateRequest {
    * @return レッスン作成Command
    */
   public LessonCreateCommand toCommand(Integer courseId, Integer lessonGroupId) {
-    return new LessonCreateCommand(courseId, lessonGroupId, title, content, videoUrl, null);
+    return new LessonCreateCommand(
+        courseId, lessonGroupId, title, content, videoUrl, null, extractTagNames());
+  }
+
+  /**
+   * タグ名一覧を取得する
+   *
+   * @return タグ名一覧
+   */
+  private List<String> extractTagNames() {
+    if (CollectionUtils.isEmpty(tags)) {
+      return Collections.emptyList();
+    }
+    return tags.stream().map(LessonTagRequest::getName).toList();
   }
 }

@@ -1,18 +1,12 @@
 package com.everrefine.elms.domain.repository;
 
+import java.util.List;
+
 import com.everrefine.elms.domain.model.tag.Tag;
 import com.everrefine.elms.domain.model.tag.TagName;
-import java.util.List;
 
 /** タグのリポジトリインターフェース。 */
 public interface TagRepository {
-
-  /**
-   * 複数のタグを一括保存する。
-   *
-   * @param tags 保存するタグ一覧
-   */
-  void saveTags(List<Tag> tags);
 
   /**
    * 指定したタグ名に一致するタグ一覧を取得する。
@@ -29,4 +23,11 @@ public interface TagRepository {
    * @return レッスンに紐づくタグの一覧
    */
   List<Tag> findAllTagsByLessonId(Integer lessonId);
+  
+  /**
+   * 複数のタグを作成する。
+   *
+   * @param tags 作成するタグ一覧
+   */
+  void createTags(List<Tag> tags);
 }

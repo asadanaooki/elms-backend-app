@@ -7,16 +7,16 @@ import java.util.List;
 public interface LessonTagRepository {
 
   /**
-   * レッスンタグを保存する。
-   *
-   * @param lessonTags 保存するレッスンタグ
-   */
-  void saveAll(List<LessonTag> lessonTags);
-
-  /**
    * 指定したレッスンIDに紐づくレッスンタグを全て削除する。
    *
    * @param lessonId レッスンID
    */
   void deleteAllByLessonId(Integer lessonId);
+
+  /**
+   * 複数のレッスンタグを作成する。
+   *
+   * @param lessonTags 作成するレッスンタグ一覧
+   */
+  void createLessonTags(List<LessonTag> lessonTags);
 }
