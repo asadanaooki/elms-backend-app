@@ -2,6 +2,7 @@ package com.everrefine.elms.infrastructure.repository;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessons;
+import com.everrefine.elms.domain.model.lesson.LessonInGroup;
 import com.everrefine.elms.domain.model.lesson.LessonSearchCriteria;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
 import com.everrefine.elms.domain.repository.LessonRepository;
@@ -10,6 +11,7 @@ import com.everrefine.elms.infrastructure.dao.LessonGroupDao;
 import com.everrefine.elms.infrastructure.entity.lesson.LessonEntity;
 import com.everrefine.elms.infrastructure.row.LessonGroupWithLessonRow;
 import com.everrefine.elms.infrastructure.row.LessonWithCourseAndLessonGroupRow;
+import com.everrefine.elms.infrastructure.row.LessonWithTagRow;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -76,10 +78,8 @@ public class LessonRepositoryImpl implements LessonRepository {
   }
 
   @Override
-  public List<Lesson> findLessonsByLessonGroupId(UUID lessonGroupId) {
-    return lessonDao.findLessonsByLessonGroupId(lessonGroupId).stream()
-        .map(LessonEntity::toDomain)
-        .toList();
+  public List<LessonInGroup> findLessonsByLessonGroupId(UUID lessonGroupId) {
+    return LessonWithTagRow.toDomainList(lessonDao.findLessonsByLessonGroupId(lessonGroupId));
   }
 
   @Override

@@ -1,0 +1,17 @@
+-- タグ
+CREATE TABLE tags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),   -- タグID
+    name VARCHAR(255) NOT NULL UNIQUE,      -- タグ名（ユニーク）
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 登録日時
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP  -- 更新日時
+);
+
+-- 中間テーブル：レッスンに紐づくタグ
+CREATE TABLE lesson_tags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- 中間テーブルID
+    lesson_id UUID REFERENCES lessons(id) ON DELETE CASCADE, -- レッスンID
+    tag_id UUID REFERENCES tags(id) ON DELETE CASCADE, -- タグID
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 登録日時
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 更新日時
+    CONSTRAINT lesson_tags_lesson_id_tag_id_key UNIQUE (lesson_id, tag_id) -- レッスンとタグの組み合わせは一意
+);

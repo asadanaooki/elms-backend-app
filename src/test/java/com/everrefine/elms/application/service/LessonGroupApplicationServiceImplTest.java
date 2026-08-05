@@ -4,15 +4,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.everrefine.elms.application.command.LessonGroupCreateCommand;
 import com.everrefine.elms.application.command.LessonGroupUpdateCommand;
 import com.everrefine.elms.application.dto.LessonGroupDto;
+import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
 import com.everrefine.elms.presentation.request.LessonGroupCreateRequest;
 import com.everrefine.elms.presentation.request.LessonGroupUpdateRequest;
+import com.everrefine.elms.testsupport.TestDataFactory;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,6 +43,8 @@ class LessonGroupApplicationServiceImplTest {
   @Autowired private LessonGroupApplicationServiceImpl lessonGroupApplicationService;
 
   @Autowired private JdbcTemplate jdbcTemplate;
+
+  @Autowired private TestDataFactory testData;
 
   @Nested
   class レッスングループ作成 {
@@ -213,6 +219,41 @@ class LessonGroupApplicationServiceImplTest {
       lessonGroupApplicationService.deleteLessonGroupById(UUID.randomUUID());
 
       // Assert
+    }
+  }
+
+  @Nested
+  class レッスングループ更新時のタグ {
+    @Test
+    void 更新レスポンスのレッスンにタグが含まれること() {
+      // Arrange - テストデータを準備（1件目のレッスンにだけ複数タグを紐づける）
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+      UUID taggedLessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("1"), "タグ付きレッスン", null, null);
+      UUID untaggedLessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("2"), "タグなしレッスン", null, null);
+      testData.createLessonTag(taggedLessonId, testData.createTag("グループタグ2"));
+      testData.createLessonTag(taggedLessonId, testData.createTag("グループタグ1"));
+
+      LessonGroupUpdateRequest request = new LessonGroupUpdateRequest("更新後グループ");
+
+      // Act
+      LessonGroupDto result =
+          lessonGroupApplicationService.updateLessonGroup(request.toCommand(lessonGroupId));
+
+      // Assert - タグで行が増えてもレッスンは重複せず、タグ名の昇順で返る
+      assertEquals(2, result.lessons().size());
+      assertEquals(taggedLessonId, result.lessons().getFirst().id());
+      assertEquals(lessonGroupId, result.lessons().getFirst().lessonGroupId());
+      assertEquals(courseId, result.lessons().getFirst().courseId());
+      assertEquals(
+          List.of("グループタグ1", "グループタグ2"),
+          result.lessons().getFirst().tags().stream().map(TagDto::name).toList());
+      assertEquals(untaggedLessonId, result.lessons().get(1).id());
+      assertTrue(result.lessons().get(1).tags().isEmpty());
     }
   }
 }

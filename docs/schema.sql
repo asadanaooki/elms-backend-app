@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict dmopUHYFaBJTLQs1VJNcqa6SU6nsB1Dw78gnLbFhfcN8gBRNvsBCtlVm3pbmVMG
+\restrict fPYGgbq9xExegj8viRHOPfVw2d6pAUrZrjedE5oPMzHcm2TGuBnYeypfiKDzRd5
 
 -- Dumped from database version 17.10 (Debian 17.10-1.pgdg13+1)
 -- Dumped by pg_dump version 18.3
@@ -71,6 +71,19 @@ CREATE TABLE public.lesson_groups (
 
 
 --
+-- Name: lesson_tags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.lesson_tags (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    lesson_id uuid,
+    tag_id uuid,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+--
 -- Name: lessons; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -110,6 +123,18 @@ CREATE TABLE public.password_reset_tokens (
     token character varying(255) NOT NULL,
     expires_at timestamp without time zone NOT NULL,
     used_at timestamp without time zone
+);
+
+
+--
+-- Name: tags; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.tags (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    name character varying(255) NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
@@ -204,6 +229,22 @@ ALTER TABLE ONLY public.lesson_groups
 
 
 --
+-- Name: lesson_tags lesson_tags_lesson_id_tag_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_tags
+    ADD CONSTRAINT lesson_tags_lesson_id_tag_id_key UNIQUE (lesson_id, tag_id);
+
+
+--
+-- Name: lesson_tags lesson_tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_tags
+    ADD CONSTRAINT lesson_tags_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: lessons lessons_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -233,6 +274,22 @@ ALTER TABLE ONLY public.password_reset_tokens
 
 ALTER TABLE ONLY public.password_reset_tokens
     ADD CONSTRAINT password_reset_tokens_token_key UNIQUE (token);
+
+
+--
+-- Name: tags tags_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags
+    ADD CONSTRAINT tags_name_key UNIQUE (name);
+
+
+--
+-- Name: tags tags_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.tags
+    ADD CONSTRAINT tags_pkey PRIMARY KEY (id);
 
 
 --
@@ -284,18 +341,27 @@ ALTER TABLE ONLY public.users
 
 
 --
--- Name: flyway_schema_history_s_idx; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING btree (success);
-
-
---
 -- Name: lesson_groups lesson_groups_course_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.lesson_groups
     ADD CONSTRAINT lesson_groups_course_id_fkey FOREIGN KEY (course_id) REFERENCES public.courses(id) ON DELETE CASCADE;
+
+
+--
+-- Name: lesson_tags lesson_tags_lesson_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_tags
+    ADD CONSTRAINT lesson_tags_lesson_id_fkey FOREIGN KEY (lesson_id) REFERENCES public.lessons(id) ON DELETE CASCADE;
+
+
+--
+-- Name: lesson_tags lesson_tags_tag_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.lesson_tags
+    ADD CONSTRAINT lesson_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id) ON DELETE CASCADE;
 
 
 --
@@ -350,5 +416,13 @@ ALTER TABLE ONLY public.user_login_histories
 -- PostgreSQL database dump complete
 --
 
-\unrestrict dmopUHYFaBJTLQs1VJNcqa6SU6nsB1Dw78gnLbFhfcN8gBRNvsBCtlVm3pbmVMG
+\unrestrict fPYGgbq9xExegj8viRHOPfVw2d6pAUrZrjedE5oPMzHcm2TGuBnYeypfiKDzRd5
+
+
+--
+-- Name: flyway_schema_history_s_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING btree (success);
+
 

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.everrefine.elms.application.command.UserLessonCompletionStatusUpdateCommand;
+import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.dto.UserLessonDetailDto;
 import com.everrefine.elms.application.dto.UserLessonGroupDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
@@ -395,6 +396,85 @@ public class UserLessonApplicationServiceImplTest {
       assertThrows(
           ResourceNotFoundException.class,
           () -> userLessonApplicationService.findUserLessons(userId, UUID.randomUUID()));
+    }
+  }
+
+  @Nested
+  class ユーザーレッスンのタグ {
+    @Test
+    void レッスン詳細にタグがタグ名の昇順で含まれること() {
+      // Arrange - テストデータを準備（登録順とタグ名の昇順が異なるようにする）
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "ULタグコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "ULタググループ");
+      UUID lessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("1"), "ULタグレッスン", null, null);
+      UUID userId = testData.createUser("ul-tag@example.com", "p", "太郎", "ultag", "GENERAL");
+      testData.createLessonTag(lessonId, testData.createTag("ULタグzzz"));
+      testData.createLessonTag(lessonId, testData.createTag("ULタグaaa"));
+
+      // Act
+      UserLessonDetailDto result =
+          userLessonApplicationService.findUserLessonDetail(
+              userId, courseId, lessonGroupId, lessonId);
+
+      // Assert
+      assertEquals(
+          List.of("ULタグaaa", "ULタグzzz"), result.tags().stream().map(TagDto::name).toList());
+    }
+
+    @Test
+    void レッスン詳細でタグがない場合は空リストになること() {
+      // Arrange - テストデータを準備
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "UL無タグコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "UL無タググループ");
+      UUID lessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("1"), "UL無タグレッスン", null, null);
+      UUID userId = testData.createUser("ul-notag@example.com", "p", "太郎", "ulnotag", "GENERAL");
+
+      // Act
+      UserLessonDetailDto result =
+          userLessonApplicationService.findUserLessonDetail(
+              userId, courseId, lessonGroupId, lessonId);
+
+      // Assert
+      assertTrue(result.tags().isEmpty());
+    }
+
+    @Test
+    void レッスン一覧で複数タグを持つレッスンが1件にまとめられること() {
+      // Arrange - テストデータを準備（JOINでレッスンの行が展開される状況を作る）
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "UL一覧タグコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "UL一覧タググループ");
+      UUID taggedLessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("1"), "UL一覧タグ付き", null, null);
+      UUID untaggedLessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("2"), "UL一覧タグなし", null, null);
+      UUID userId = testData.createUser("ul-listtag@example.com", "p", "太郎", "ullist", "GENERAL");
+      testData.createLessonTag(taggedLessonId, testData.createTag("UL一覧タグ2"));
+      testData.createLessonTag(taggedLessonId, testData.createTag("UL一覧タグ1"));
+      testData.createUserLesson(userId, taggedLessonId);
+
+      // Act
+      List<UserLessonGroupDto> result =
+          userLessonApplicationService.findUserLessons(userId, courseId);
+
+      // Assert - タグで行が増えてもレッスンは重複せず、受講状態も保たれる
+      assertEquals(1, result.size());
+      assertEquals(2, result.getFirst().userLessons().size());
+      assertEquals(taggedLessonId, result.getFirst().userLessons().getFirst().lesson().id());
+      assertTrue(result.getFirst().userLessons().getFirst().isLessonCompleted());
+      assertEquals(
+          List.of("UL一覧タグ1", "UL一覧タグ2"),
+          result.getFirst().userLessons().getFirst().lesson().tags().stream()
+              .map(TagDto::name)
+              .toList());
+      assertEquals(untaggedLessonId, result.getFirst().userLessons().get(1).lesson().id());
+      assertFalse(result.getFirst().userLessons().get(1).isLessonCompleted());
+      assertTrue(result.getFirst().userLessons().get(1).lesson().tags().isEmpty());
     }
   }
 }

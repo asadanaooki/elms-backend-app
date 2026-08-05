@@ -21,6 +21,8 @@ participant "LessonGroupDomainService" as LGDomainService
 participant "LessonDomainService" as LDomainService
 participant "LessonGroupRepository" as LGRepo
 participant "LessonRepository" as LRepo
+participant "TagRepository" as TagRepo
+participant "LessonTagRepository" as LessonTagRepo
 participant "CourseRepository" as CourseRepo
 database "DB" as DB
 
@@ -176,8 +178,12 @@ else レッスンが存在する
     LAppService --> LController : ResourceNotFoundException
     LController --> Client : 404 Not Found
   else 一致
+    LAppService -> TagRepo : findAllTagsByLessonId(lessonId)
+    TagRepo -> DB : SELECT tags JOIN lesson_tags WHERE lesson_id = ? ORDER BY t.name
+    DB --> TagRepo : List<Tag>
+    TagRepo --> LAppService : List<Tag>
     LAppService --> LController : LessonDto
-    LController --> Client : 200 OK { id, title, content, videoUrl, lessonOrder, ... }
+    LController --> Client : 200 OK { id, title, content, videoUrl, lessonOrder, tags, ... }
   end
 end
 
@@ -216,8 +222,10 @@ else レッスングループが存在し、パスのコースに属する
   DB --> LRepo : 作成されたLesson
   LRepo --> LAppService : Lesson
 
+  ref over LAppService, DB : タグの洗い替え（createOrReplaceLessonTags）
+
   LAppService --> LController : LessonDto
-  LController --> Client : 200 OK { id, title, lessonOrder, ... }
+  LController --> Client : 200 OK { id, title, lessonOrder, tags, ... }
 end
 
 ' ============================================================
@@ -225,7 +233,7 @@ end
 ' ============================================================
 == レッスン更新 (PUT /api/courses/{courseId}/lesson-groups/{lessonGroupId}/lessons/{lessonId}) ==
 
-Client -> LController : PUT /api/courses/{courseId}/lesson-groups/{lessonGroupId}/lessons/{lessonId}\n{ title, content, videoUrl }
+Client -> LController : PUT /api/courses/{courseId}/lesson-groups/{lessonGroupId}/lessons/{lessonId}\n{ title, content, videoUrl, tags }
 
 LController -> LAppService : updateLesson(LessonUpdateCommand)
 
@@ -244,8 +252,10 @@ else レッスンが存在する
   DB --> LRepo : 更新されたLesson
   LRepo --> LAppService : Lesson
 
+  ref over LAppService, DB : タグの洗い替え（createOrReplaceLessonTags）
+
   LAppService --> LController : LessonDto
-  LController --> Client : 200 OK { id, title, content, videoUrl, ... }
+  LController --> Client : 200 OK { id, title, content, videoUrl, tags, ... }
 end
 
 ' ============================================================
@@ -380,6 +390,40 @@ else コースが存在する
 
   LAppService --> CController : LessonImportResponseDto\n{ importedLessonGroupCount, importedLessonCount }
   CController --> Client : 200 OK { importedLessonGroupCount, importedLessonCount }
+end
+
+' ============================================================
+' タグの洗い替え（レッスン作成・更新の共通処理）
+' ============================================================
+== タグの洗い替え (createOrReplaceLessonTags) ==
+
+note over LAppService
+  タグの並び順はリクエスト順のため、差分更新では並び替えを表現できない。
+  そのため全削除してから登録し直す。
+end note
+
+LAppService -> LessonTagRepo : deleteAllByLessonId(lessonId)
+LessonTagRepo -> DB : DELETE FROM lesson_tags WHERE lesson_id = ?
+
+alt タグの指定がない
+  LAppService --> LAppService : 空のタグ一覧を返す（紐付けは全て外れる）
+else タグの指定がある
+  LAppService -> LAppService : タグ名を正規化（前後の空白除去・重複除去、リクエスト順は保持）
+
+  LAppService -> TagRepo : findAllTagsByNames(names)
+  TagRepo -> DB : SELECT * FROM tags WHERE name IN (...)
+  DB --> TagRepo : List<Tag>
+  TagRepo --> LAppService : 登録済みのタグ一覧
+
+  LAppService -> LAppService : 未登録のタグを抽出しUUIDを採番
+
+  LAppService -> TagRepo : createTags(未登録タグ)
+  TagRepo -> DB : INSERT INTO tags（insertAllで一括登録）
+
+  LAppService -> LessonTagRepo : createLessonTags(リクエスト順の紐付け)
+  LessonTagRepo -> DB : INSERT INTO lesson_tags（insertAllで一括登録）
+
+  LAppService --> LAppService : リクエスト順のタグ一覧を返す
 end
 
 @enduml

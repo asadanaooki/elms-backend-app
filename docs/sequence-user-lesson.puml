@@ -19,6 +19,7 @@ participant "UserRepository" as UserRepo
 participant "CourseRepository" as CourseRepo
 participant "LessonRepository" as LRepo
 participant "UserLessonRepository" as ULRepo
+participant "TagRepository" as TagRepo
 database "DB" as DB
 
 note over Client
@@ -120,7 +121,7 @@ else ユーザーが存在する
 
     AppService -> AppService : グループ単位で UserLessonGroupDto を生成\n各レッスンの isLessonCompleted = 完了集合に含まれるか
     AppService --> Controller : List<UserLessonGroupDto>
-    Controller --> Client : 200 OK [{ id, name, userLessons: [{ lesson, isLessonCompleted }] }]
+    Controller --> Client : 200 OK [{ id, name, userLessons: [{ lesson（tagsを含む）, isLessonCompleted }] }]
   end
 end
 
@@ -158,8 +159,13 @@ else レッスンが存在する
 
     AppService -> AppService : isLessonCompleted = (Optional.isPresent())
 
-    AppService --> Controller : UserLessonDetailDto\n{ lesson情報, isLessonCompleted }
-    Controller --> Client : 200 OK { id, title, content, videoUrl, isLessonCompleted }
+    AppService -> TagRepo : findAllTagsByLessonId(lessonId)
+    TagRepo -> DB : SELECT tags JOIN lesson_tags WHERE lesson_id = ? ORDER BY t.name
+    DB --> TagRepo : List<Tag>
+    TagRepo --> AppService : List<Tag>
+
+    AppService --> Controller : UserLessonDetailDto\n{ lesson情報, tags, isLessonCompleted }
+    Controller --> Client : 200 OK { id, title, content, videoUrl, tags, isLessonCompleted }
   end
 end
 

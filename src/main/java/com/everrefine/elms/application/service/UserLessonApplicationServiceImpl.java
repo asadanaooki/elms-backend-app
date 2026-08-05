@@ -12,6 +12,7 @@ import com.everrefine.elms.domain.model.lesson.LessonInGroup;
 import com.everrefine.elms.domain.model.user.User;
 import com.everrefine.elms.domain.repository.CourseRepository;
 import com.everrefine.elms.domain.repository.LessonRepository;
+import com.everrefine.elms.domain.repository.TagRepository;
 import com.everrefine.elms.domain.repository.UserLessonRepository;
 import com.everrefine.elms.domain.repository.UserRepository;
 import java.util.Collections;
@@ -32,6 +33,7 @@ public class UserLessonApplicationServiceImpl implements UserLessonApplicationSe
   private final UserRepository userRepository;
   private final UserLessonRepository userLessonRepository;
   private final CourseRepository courseRepository;
+  private final TagRepository tagRepository;
 
   @Override
   @Transactional(readOnly = true)
@@ -41,7 +43,8 @@ public class UserLessonApplicationServiceImpl implements UserLessonApplicationSe
         findLessonBelongingToCourseAndLessonGroupOrThrow(lessonId, courseId, lessonGroupId);
     boolean isLessonCompleted =
         userLessonRepository.findByUserIdAndLessonId(userId, lessonId).isPresent();
-    return UserLessonDetailDto.from(lesson, isLessonCompleted);
+    return UserLessonDetailDto.from(
+        lesson, tagRepository.findAllTagsByLessonId(lessonId), isLessonCompleted);
   }
 
   @Override

@@ -13,9 +13,14 @@ import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroup;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessons;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
+import com.everrefine.elms.domain.model.tag.LessonTag;
+import com.everrefine.elms.domain.model.tag.Tag;
+import com.everrefine.elms.domain.model.tag.TagName;
 import com.everrefine.elms.domain.repository.CourseRepository;
 import com.everrefine.elms.domain.repository.LessonGroupRepository;
 import com.everrefine.elms.domain.repository.LessonRepository;
+import com.everrefine.elms.domain.repository.LessonTagRepository;
+import com.everrefine.elms.domain.repository.TagRepository;
 import com.everrefine.elms.domain.service.LessonDomainService;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
@@ -24,6 +29,7 @@ import java.io.PrintWriter;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -43,6 +49,8 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   private final LessonRepository lessonRepository;
   private final LessonGroupRepository lessonGroupRepository;
   private final CourseRepository courseRepository;
+  private final LessonTagRepository lessonTagRepository;
+  private final TagRepository tagRepository;
   private final LessonDomainService lessonDomainService;
 
   /**
@@ -70,7 +78,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   @Transactional(readOnly = true)
   public LessonDto findLessonById(UUID courseId, UUID lessonGroupId, UUID lessonId) {
     Lesson lesson = findLessonBelongingToCourseAndGroupOrThrow(lessonId, courseId, lessonGroupId);
-    return LessonDto.from(lesson);
+    return LessonDto.from(lesson, tagRepository.findAllTagsByLessonId(lessonId));
   }
 
   @Override
@@ -132,7 +140,10 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     BigDecimal lessonOrder =
         lessonDomainService.issueLessonOrder(lessonCreateCommand.lessonGroupId());
     Lesson createdLesson = lessonRepository.createLesson(lessonCreateCommand.toLesson(lessonOrder));
-    return LessonDto.from(createdLesson);
+
+    List<Tag> tags = createOrReplaceLessonTags(createdLesson.id(), lessonCreateCommand.tagNames());
+
+    return LessonDto.from(createdLesson, tags);
   }
 
   /**
@@ -163,7 +174,11 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson currentLesson = findLessonOrThrow(lessonUpdateCommand.id());
     Lesson updatedLesson =
         lessonRepository.updateLesson(lessonUpdateCommand.toLesson(currentLesson));
-    return LessonDto.from(updatedLesson);
+
+    List<Tag> tags =
+        createOrReplaceLessonTags(lessonUpdateCommand.id(), lessonUpdateCommand.tagNames());
+
+    return LessonDto.from(updatedLesson, tags);
   }
 
   @Override
@@ -229,7 +244,7 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson updatedLesson = targetLesson.updateOrder(newOrder);
     Lesson savedLesson = lessonRepository.updateLesson(updatedLesson);
 
-    return LessonDto.from(savedLesson);
+    return LessonDto.from(savedLesson, tagRepository.findAllTagsByLessonId(targetLessonId));
   }
 
   /**
@@ -362,5 +377,64 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
       throw new RuntimeException("CSVファイルの作成に失敗しました", e);
     }
     return new ByteArrayResource(baos.toByteArray());
+  }
+
+  /**
+   * レッスンに紐づくタグを、指定されたタグ名一覧で洗い替える。
+   *
+   * <p>差分更新ではなく全削除してから登録し直す。タグの並び順はリクエスト順であり、 差分更新では並び替えを表現できないため。
+   *
+   * <p>未登録のタグ名が指定された場合は、そのタグを新規登録したうえでレッスンに紐づける。
+   *
+   * @param lessonId レッスンID
+   * @param requestedTagNames リクエストされたタグ名一覧
+   * @return レッスンに紐づけられたタグ一覧（リクエストと同じ並び順）
+   */
+  private List<Tag> createOrReplaceLessonTags(UUID lessonId, List<String> requestedTagNames) {
+    lessonTagRepository.deleteAllByLessonId(lessonId);
+
+    if (requestedTagNames.isEmpty()) {
+      return List.of();
+    }
+
+    List<Tag> tagsInRequestOrder = resolveTagsInRequestOrder(requestedTagNames);
+
+    lessonTagRepository.createLessonTags(
+        tagsInRequestOrder.stream()
+            .map(tag -> LessonTag.create(lessonId, tag.id()).withId(UUID.randomUUID()))
+            .toList());
+
+    return tagsInRequestOrder;
+  }
+
+  /**
+   * リクエストされたタグ名一覧に対応する永続化済みのタグを、リクエストと同じ並び順で取得する。
+   *
+   * <p>タグ名は前後の空白を取り除いたうえで重複を除き、最初に現れた位置の順序を保持する。 未登録のタグ名は新規登録する。
+   *
+   * @param requestedTagNames リクエストされたタグ名一覧
+   * @return 永続化済みのタグ一覧（リクエストと同じ並び順）
+   */
+  private List<Tag> resolveTagsInRequestOrder(List<String> requestedTagNames) {
+    // 正規化（前後の空白除去・重複除去）し、リクエスト順を保持する
+    Map<TagName, Tag> normalizedTagsByName = new LinkedHashMap<>();
+    requestedTagNames.stream()
+        .map(Tag::create)
+        .forEach(tag -> normalizedTagsByName.putIfAbsent(tag.name(), tag));
+
+    Map<TagName, Tag> persistedTagsByName =
+        tagRepository.findAllTagsByNames(List.copyOf(normalizedTagsByName.keySet())).stream()
+            .collect(Collectors.toMap(Tag::name, Function.identity()));
+
+    // 未登録のタグはIDを採番して新規登録する
+    List<Tag> tagsToCreate =
+        normalizedTagsByName.entrySet().stream()
+            .filter(entry -> !persistedTagsByName.containsKey(entry.getKey()))
+            .map(entry -> entry.getValue().withId(UUID.randomUUID()))
+            .toList();
+    tagRepository.createTags(tagsToCreate);
+    tagsToCreate.forEach(tag -> persistedTagsByName.put(tag.name(), tag));
+
+    return normalizedTagsByName.keySet().stream().map(persistedTagsByName::get).toList();
   }
 }

@@ -70,7 +70,10 @@ public class LessonGroupApplicationServiceImpl implements LessonGroupApplication
 
     List<LessonDto> lessonDtos =
         lessonRepository.findLessonsByLessonGroupId(persistedLessonGroup.id()).stream()
-            .map(LessonDto::from)
+            .map(
+                lesson ->
+                    LessonDto.from(
+                        persistedLessonGroup.id(), persistedLessonGroup.courseId(), lesson))
             .toList();
 
     return LessonGroupDto.from(persistedLessonGroup, lessonDtos);

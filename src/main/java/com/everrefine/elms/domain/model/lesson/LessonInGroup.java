@@ -1,7 +1,9 @@
 package com.everrefine.elms.domain.model.lesson;
 
+import com.everrefine.elms.domain.model.tag.Tag;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.lang.Nullable;
 
@@ -13,4 +15,5 @@ public record LessonInGroup(
     @Nullable String content,
     @Nullable String videoUrl,
     LocalDateTime createdAt,
-    LocalDateTime updatedAt) {}
+    LocalDateTime updatedAt,
+    List<Tag> tags) {}

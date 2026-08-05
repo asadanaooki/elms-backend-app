@@ -2,6 +2,7 @@ package com.everrefine.elms.domain.repository;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessons;
+import com.everrefine.elms.domain.model.lesson.LessonInGroup;
 import com.everrefine.elms.domain.model.lesson.LessonSearchCriteria;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
 import java.math.BigDecimal;
@@ -45,12 +46,12 @@ public interface LessonRepository {
   int countLessons(LessonSearchCriteria criteria);
 
   /**
-   * レッスングループIDに紐づくレッスン一覧を取得する。
+   * レッスングループIDに紐づくレッスン一覧を、紐づくタグとあわせて取得する。
    *
    * @param lessonGroupId レッスングループID
    * @return レッスン一覧
    */
-  List<Lesson> findLessonsByLessonGroupId(UUID lessonGroupId);
+  List<LessonInGroup> findLessonsByLessonGroupId(UUID lessonGroupId);
 
   /**
    * コースIDに紐づくレッスングループごとのレッスン一覧を取得する。

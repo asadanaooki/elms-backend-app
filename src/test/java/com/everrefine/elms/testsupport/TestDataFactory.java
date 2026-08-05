@@ -190,4 +190,40 @@ public class TestDataFactory {
         LocalDateTime.now(),
         LocalDateTime.now());
   }
+
+  /**
+   * タグを作成する。
+   *
+   * @param name タグ名
+   * @return 作成されたタグID
+   */
+  public UUID createTag(String name) {
+    jdbcTemplate.update(
+        """
+            INSERT INTO tags (name, created_at, updated_at)
+            VALUES (?, ?, ?)
+            """,
+        name,
+        LocalDateTime.now(),
+        LocalDateTime.now());
+    return jdbcTemplate.queryForObject("SELECT id FROM tags WHERE name = ?", UUID.class, name);
+  }
+
+  /**
+   * レッスンにタグを紐づける。
+   *
+   * @param lessonId レッスンID
+   * @param tagId タグID
+   */
+  public void createLessonTag(UUID lessonId, UUID tagId) {
+    jdbcTemplate.update(
+        """
+            INSERT INTO lesson_tags (lesson_id, tag_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+            """,
+        lessonId,
+        tagId,
+        LocalDateTime.now(),
+        LocalDateTime.now());
+  }
 }

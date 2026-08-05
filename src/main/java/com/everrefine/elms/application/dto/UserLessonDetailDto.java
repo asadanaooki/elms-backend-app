@@ -1,10 +1,12 @@
 package com.everrefine.elms.application.dto;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
+import com.everrefine.elms.domain.model.tag.Tag;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /** ユーザーレッスン詳細。 */
@@ -18,6 +20,7 @@ public record UserLessonDetailDto(
         String content,
     @Schema(description = "動画URL", example = "https://example.com/videos/lesson1.mp4")
         String videoUrl,
+    @Schema(description = "タグ一覧") List<TagDto> tags,
     @Schema(description = "登録日時", example = "2024-01-01T09:00:00") LocalDateTime createdAt,
     @Schema(description = "更新日時", example = "2024-06-01T10:30:00") LocalDateTime updatedAt,
     @Schema(description = "レッスン完了フラグ（true: 完了, false: 未完了）", example = "false")
@@ -28,10 +31,11 @@ public record UserLessonDetailDto(
    * LessonエンティティからUserLessonDetailDtoを生成する。
    *
    * @param lesson レッスンエンティティ
+   * @param tags レッスンに紐づくタグ一覧
    * @param isLessonCompleted レッスン完了フラグ
    * @return ユーザーレッスン詳細DTO
    */
-  public static UserLessonDetailDto from(Lesson lesson, boolean isLessonCompleted) {
+  public static UserLessonDetailDto from(Lesson lesson, List<Tag> tags, boolean isLessonCompleted) {
     return new UserLessonDetailDto(
         lesson.id(),
         lesson.lessonGroupId(),
@@ -40,6 +44,7 @@ public record UserLessonDetailDto(
         lesson.title().value(),
         lesson.content() != null ? lesson.content().value() : null,
         lesson.videoUrl() != null ? lesson.videoUrl().value() : null,
+        TagDto.from(tags),
         lesson.createdAt(),
         lesson.updatedAt(),
         isLessonCompleted);

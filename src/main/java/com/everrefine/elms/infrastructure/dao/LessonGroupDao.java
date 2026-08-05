@@ -31,11 +31,17 @@ public interface LessonGroupDao extends CrudRepository<LessonGroupEntity, UUID> 
         lg.title as lesson_group_title,
         lg.lesson_group_order,
         lg.created_at as lesson_group_created_at,
-        lg.updated_at as lesson_group_updated_at
+        lg.updated_at as lesson_group_updated_at,
+        t.id as tag_id,
+        t.name as tag_name,
+        t.created_at as tag_created_at,
+        t.updated_at as tag_updated_at
       FROM lesson_groups lg
       LEFT JOIN lessons l ON lg.id = l.lesson_group_id
+      LEFT JOIN lesson_tags lt ON l.id = lt.lesson_id
+      LEFT JOIN tags t ON lt.tag_id = t.id
       WHERE lg.course_id = :courseId
-      ORDER BY lg.lesson_group_order ASC, l.lesson_order ASC
+      ORDER BY lg.lesson_group_order ASC, l.lesson_order ASC, t.name ASC
       """)
   List<LessonGroupWithLessonRow> findLessonGroupsByCourseId(@Param("courseId") UUID courseId);
 

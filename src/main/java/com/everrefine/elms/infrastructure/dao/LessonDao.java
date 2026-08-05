@@ -2,6 +2,7 @@ package com.everrefine.elms.infrastructure.dao;
 
 import com.everrefine.elms.infrastructure.entity.lesson.LessonEntity;
 import com.everrefine.elms.infrastructure.row.LessonWithCourseAndLessonGroupRow;
+import com.everrefine.elms.infrastructure.row.LessonWithTagRow;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -64,12 +65,25 @@ public interface LessonDao extends CrudRepository<LessonEntity, UUID> {
 
   @Query(
       """
-          SELECT *
-          FROM lessons
-          WHERE lesson_group_id = :lessonGroupId
-          ORDER BY lesson_order ASC
+          SELECT
+            l.id as lesson_id,
+            l.title as lesson_title,
+            l.lesson_order,
+            l.content as lesson_content,
+            l.video_url as lesson_video_url,
+            l.created_at as lesson_created_at,
+            l.updated_at as lesson_updated_at,
+            t.id as tag_id,
+            t.name as tag_name,
+            t.created_at as tag_created_at,
+            t.updated_at as tag_updated_at
+          FROM lessons l
+          LEFT JOIN lesson_tags lt ON l.id = lt.lesson_id
+          LEFT JOIN tags t ON lt.tag_id = t.id
+          WHERE l.lesson_group_id = :lessonGroupId
+          ORDER BY l.lesson_order ASC, t.name ASC
           """)
-  List<LessonEntity> findLessonsByLessonGroupId(@Param("lessonGroupId") UUID lessonGroupId);
+  List<LessonWithTagRow> findLessonsByLessonGroupId(@Param("lessonGroupId") UUID lessonGroupId);
 
   @Modifying
   @Query(

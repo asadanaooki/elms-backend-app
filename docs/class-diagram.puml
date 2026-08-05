@@ -154,6 +154,34 @@ package "lesson" {
   }
 }
 
+' ===== tag パッケージ =====
+package "tag" {
+  class Tag <<AggregateRoot>> {
+    - id : UUID
+    - name : TagName
+    - createdAt : LocalDateTime
+    - updatedAt : LocalDateTime
+    --
+    + {static} create(name) : Tag
+    + withId(id) : Tag
+  }
+
+  class LessonTag <<AggregateRoot>> {
+    - id : UUID
+    - lessonId : UUID
+    - tagId : UUID
+    - createdAt : LocalDateTime
+    - updatedAt : LocalDateTime
+    --
+    + {static} create(lessonId, tagId) : LessonTag
+    + withId(id) : LessonTag
+  }
+
+  class TagName <<ValueObject>> {
+    - value : String
+  }
+}
+
 ' ===== UserLesson（中間テーブル） =====
 class UserLesson <<AggregateRoot>> {
   - id : UUID
@@ -210,6 +238,8 @@ User "1" --> "0..*" UserLesson : userId
 Course "1" --> "0..*" LessonGroup : courseId
 LessonGroup "1" --> "0..*" Lesson : lessonGroupId
 Lesson "1" --> "0..*" UserLesson : lessonId
+Lesson "1" --> "0..*" LessonTag : lessonId
+Tag "1" --> "0..*" LessonTag : tagId
 User "1" --> "0..*" PasswordResetToken : userId
 
 ' ===== 値オブジェクトの構成（各集約内） =====
@@ -225,6 +255,8 @@ Course *-- CourseDescription
 LessonGroup *-- LessonTitle
 Lesson *-- LessonTitle
 Lesson *-- LessonContent
+
+Tag *-- TagName
 
 News *-- NewsTitle
 News *-- NewsContent

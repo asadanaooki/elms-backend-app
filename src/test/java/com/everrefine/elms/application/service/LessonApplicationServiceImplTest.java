@@ -15,12 +15,14 @@ import com.everrefine.elms.application.dto.CourseLessonsDto;
 import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.LessonImportResponseDto;
 import com.everrefine.elms.application.dto.LessonPageDto;
+import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.presentation.request.LessonCreateRequest;
 import com.everrefine.elms.presentation.request.LessonOrderUpdateRequest;
 import com.everrefine.elms.presentation.request.LessonSearchRequest;
+import com.everrefine.elms.presentation.request.LessonTagRequest;
 import com.everrefine.elms.presentation.request.LessonUpdateRequest;
 import com.everrefine.elms.testsupport.TestDataFactory;
 import java.math.BigDecimal;
@@ -215,7 +217,7 @@ public class LessonApplicationServiceImplTest {
       UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
 
       LessonCreateRequest request =
-          new LessonCreateRequest("新規レッスン", "新規説明", "https://example.com/new-video.mp4");
+          new LessonCreateRequest("新規レッスン", "新規説明", "https://example.com/new-video.mp4", null);
       LessonCreateCommand command = request.toCommand(courseId, lessonGroupId);
 
       // Act
@@ -244,7 +246,7 @@ public class LessonApplicationServiceImplTest {
       UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
       UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
 
-      LessonCreateRequest request = new LessonCreateRequest("最小構成レッスン", null, null);
+      LessonCreateRequest request = new LessonCreateRequest("最小構成レッスン", null, null, null);
       LessonCreateCommand command = request.toCommand(courseId, lessonGroupId);
 
       // Act
@@ -485,7 +487,8 @@ public class LessonApplicationServiceImplTest {
               "https://example.com/old-video.mp4");
 
       LessonUpdateRequest request =
-          new LessonUpdateRequest("更新後タイトル", "更新後説明", "https://example.com/updated-video.mp4");
+          new LessonUpdateRequest(
+              "更新後タイトル", "更新後説明", "https://example.com/updated-video.mp4", null);
       LessonUpdateCommand command = request.toCommand(lessonId);
 
       // Act
@@ -524,7 +527,7 @@ public class LessonApplicationServiceImplTest {
               "https://example.com/old-video.mp4");
 
       // nullを渡すと元の値が保持される仕様
-      LessonUpdateRequest request = new LessonUpdateRequest("タイトルのみ更新", null, null);
+      LessonUpdateRequest request = new LessonUpdateRequest("タイトルのみ更新", null, null, null);
       LessonUpdateCommand command = request.toCommand(lessonId);
 
       // Act
@@ -541,7 +544,7 @@ public class LessonApplicationServiceImplTest {
     void 存在しないレッスンを更新するとResourceNotFoundExceptionが投げられること() {
       // Arrange
       LessonUpdateRequest request =
-          new LessonUpdateRequest("存在しないレッスン", "説明", "https://example.com/video.mp4");
+          new LessonUpdateRequest("存在しないレッスン", "説明", "https://example.com/video.mp4", null);
       UUID nonExistentId = UUID.randomUUID();
       LessonUpdateCommand command = request.toCommand(nonExistentId);
 
@@ -819,6 +822,257 @@ public class LessonApplicationServiceImplTest {
               ResourceNotFoundException.class,
               () -> lessonApplicationService.updateLessonOrder(request.toCommand(lesson1Id)));
       assertEquals("Lesson が見つかりませんでした。id = " + nonExistentId, exception.getMessage());
+    }
+  }
+
+  @Nested
+  class レッスンタグ {
+    @Test
+    void タグを指定してレッスンを作成するとタグが紐づけられること() {
+      // Arrange - テストデータを準備
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+
+      LessonCreateRequest request =
+          new LessonCreateRequest(
+              "タグ付きレッスン",
+              "説明",
+              "https://example.com/video.mp4",
+              List.of(new LessonTagRequest("独自タグA"), new LessonTagRequest("独自タグB")));
+
+      // Act
+      LessonDto result =
+          lessonApplicationService.createLesson(request.toCommand(courseId, lessonGroupId));
+
+      // Assert - レスポンスはリクエストと同じ並び順
+      assertEquals(List.of("独自タグA", "独自タグB"), result.tags().stream().map(TagDto::name).toList());
+
+      // Assert - DBにも紐付けが登録されている
+      List<String> persistedTagNames =
+          jdbcTemplate.queryForList(
+              """
+              SELECT t.name FROM lesson_tags lt
+              JOIN tags t ON t.id = lt.tag_id
+              WHERE lt.lesson_id = ?
+              ORDER BY t.name ASC
+              """,
+              String.class,
+              result.id());
+      assertEquals(List.of("独自タグA", "独自タグB"), persistedTagNames);
+    }
+
+    @Test
+    void 既存のタグを指定した場合は新規登録されずに再利用されること() {
+      // Arrange - テストデータを準備（既存タグを用意する）
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+      UUID existingTagId = testData.createTag("既存タグ");
+
+      LessonCreateRequest request =
+          new LessonCreateRequest("レッスン", null, null, List.of(new LessonTagRequest("既存タグ")));
+
+      // Act
+      LessonDto result =
+          lessonApplicationService.createLesson(request.toCommand(courseId, lessonGroupId));
+
+      // Assert - 既存タグのIDがそのまま使われ、タグは増えていない
+      assertEquals(1, result.tags().size());
+      assertEquals(existingTagId, result.tags().getFirst().id());
+      assertEquals(
+          1,
+          jdbcTemplate.queryForObject(
+              "SELECT COUNT(*) FROM tags WHERE name = ?", Integer.class, "既存タグ"));
+    }
+
+    @Test
+    void タグ名の前後の空白が除去され重複は最初の位置にまとめられること() {
+      // Arrange - テストデータを準備
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+
+      LessonCreateRequest request =
+          new LessonCreateRequest(
+              "レッスン",
+              null,
+              null,
+              List.of(
+                  new LessonTagRequest("  正規化タグ  "),
+                  new LessonTagRequest("別タグ"),
+                  new LessonTagRequest("正規化タグ")));
+
+      // Act
+      LessonDto result =
+          lessonApplicationService.createLesson(request.toCommand(courseId, lessonGroupId));
+
+      // Assert - 空白除去後に重複が排除され、最初に現れた順序が保たれる
+      assertEquals(List.of("正規化タグ", "別タグ"), result.tags().stream().map(TagDto::name).toList());
+      assertEquals(
+          1,
+          jdbcTemplate.queryForObject(
+              "SELECT COUNT(*) FROM tags WHERE name = ?", Integer.class, "正規化タグ"));
+    }
+
+    @Test
+    void タグを指定せずにレッスンを作成するとタグが空になること() {
+      // Arrange - テストデータを準備
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+
+      LessonCreateRequest request = new LessonCreateRequest("タグなしレッスン", null, null, null);
+
+      // Act
+      LessonDto result =
+          lessonApplicationService.createLesson(request.toCommand(courseId, lessonGroupId));
+
+      // Assert
+      assertTrue(result.tags().isEmpty());
+    }
+
+    @Test
+    void レッスン更新時にタグが洗い替えられること() {
+      // Arrange - テストデータを準備（更新前のタグを紐づけておく）
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+      UUID lessonId =
+          testData.createLesson(lessonGroupId, courseId, new BigDecimal("1"), "レッスン", null, null);
+      testData.createLessonTag(lessonId, testData.createTag("更新前タグ"));
+
+      LessonUpdateRequest request =
+          new LessonUpdateRequest(
+              "更新後レッスン",
+              null,
+              null,
+              List.of(new LessonTagRequest("更新後タグ1"), new LessonTagRequest("更新後タグ2")));
+
+      // Act
+      LessonDto result = lessonApplicationService.updateLesson(request.toCommand(lessonId));
+
+      // Assert - 更新前のタグは外れ、指定したタグだけが残る
+      assertEquals(List.of("更新後タグ1", "更新後タグ2"), result.tags().stream().map(TagDto::name).toList());
+      List<String> persistedTagNames =
+          jdbcTemplate.queryForList(
+              """
+              SELECT t.name FROM lesson_tags lt
+              JOIN tags t ON t.id = lt.tag_id
+              WHERE lt.lesson_id = ?
+              ORDER BY t.name ASC
+              """,
+              String.class,
+              lessonId);
+      assertEquals(List.of("更新後タグ1", "更新後タグ2"), persistedTagNames);
+    }
+
+    @Test
+    void レッスン更新でタグを指定しないと紐付けが全て外れること() {
+      // Arrange - テストデータを準備（更新前のタグを紐づけておく）
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+      UUID lessonId =
+          testData.createLesson(lessonGroupId, courseId, new BigDecimal("1"), "レッスン", null, null);
+      UUID tagId = testData.createTag("外されるタグ");
+      testData.createLessonTag(lessonId, tagId);
+
+      LessonUpdateRequest request = new LessonUpdateRequest("更新後レッスン", null, null, null);
+
+      // Act
+      LessonDto result = lessonApplicationService.updateLesson(request.toCommand(lessonId));
+
+      // Assert - 紐付けだけが消え、タグ自体は残る
+      assertTrue(result.tags().isEmpty());
+      assertEquals(
+          0,
+          jdbcTemplate.queryForObject(
+              "SELECT COUNT(*) FROM lesson_tags WHERE lesson_id = ?", Integer.class, lessonId));
+      assertEquals(
+          1,
+          jdbcTemplate.queryForObject(
+              "SELECT COUNT(*) FROM tags WHERE id = ?", Integer.class, tagId));
+    }
+
+    @Test
+    void レッスン取得時にタグがタグ名の昇順で返ること() {
+      // Arrange - テストデータを準備（登録順とタグ名の昇順が異なるようにする）
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+      UUID lessonId =
+          testData.createLesson(lessonGroupId, courseId, new BigDecimal("1"), "レッスン", null, null);
+      testData.createLessonTag(lessonId, testData.createTag("zzz-タグ"));
+      testData.createLessonTag(lessonId, testData.createTag("aaa-タグ"));
+
+      // Act
+      LessonDto result = lessonApplicationService.findLessonById(courseId, lessonGroupId, lessonId);
+
+      // Assert
+      assertEquals(List.of("aaa-タグ", "zzz-タグ"), result.tags().stream().map(TagDto::name).toList());
+    }
+
+    @Test
+    void レッスン並び替え後もタグが返ること() {
+      // Arrange - テストデータを準備
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+      UUID lessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("1000"), "レッスン", null, null);
+      UUID precedingLessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("2000"), "後続レッスン", null, null);
+      testData.createLessonTag(lessonId, testData.createTag("並び替えタグ"));
+
+      // Act - 後続レッスンの後ろへ移動する
+      LessonOrderUpdateRequest request = new LessonOrderUpdateRequest(precedingLessonId, null);
+      LessonDto result = lessonApplicationService.updateLessonOrder(request.toCommand(lessonId));
+
+      // Assert
+      assertEquals(List.of("並び替えタグ"), result.tags().stream().map(TagDto::name).toList());
+    }
+
+    @Test
+    void コース別レッスン一覧で複数タグを持つレッスンが1件にまとめられること() {
+      // Arrange - テストデータを準備（1レッスンに複数タグを紐づけ、JOINで行が展開される状況を作る）
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+      UUID taggedLessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("1"), "タグ複数レッスン", null, null);
+      UUID untaggedLessonId =
+          testData.createLesson(
+              lessonGroupId, courseId, new BigDecimal("2"), "タグなしレッスン", null, null);
+      testData.createLessonTag(taggedLessonId, testData.createTag("複数タグ1"));
+      testData.createLessonTag(taggedLessonId, testData.createTag("複数タグ2"));
+      testData.createLessonTag(taggedLessonId, testData.createTag("複数タグ3"));
+
+      // Act
+      CourseLessonsDto result = lessonApplicationService.findLessonsGroupedByLessonGroup(courseId);
+
+      // Assert - タグで行が増えてもレッスンは重複しない
+      List<LessonDto> lessons = result.lessonGroups().getFirst().lessons();
+      assertEquals(2, lessons.size());
+      assertEquals(taggedLessonId, lessons.getFirst().id());
+      assertEquals(
+          List.of("複数タグ1", "複数タグ2", "複数タグ3"),
+          lessons.getFirst().tags().stream().map(TagDto::name).toList());
+      assertEquals(untaggedLessonId, lessons.get(1).id());
+      assertTrue(lessons.get(1).tags().isEmpty());
+    }
+
+    @Test
+    void レッスンを削除するとタグの紐付けも削除されること() {
+      // Arrange - テストデータを準備
+      UUID courseId = testData.createCourse(new BigDecimal("1"), "テストコース", "コース説明");
+      UUID lessonGroupId = testData.createLessonGroup(courseId, new BigDecimal("1"), "テストグループ");
+      UUID lessonId =
+          testData.createLesson(lessonGroupId, courseId, new BigDecimal("1"), "レッスン", null, null);
+      testData.createLessonTag(lessonId, testData.createTag("削除対象タグ"));
+
+      // Act
+      lessonApplicationService.deleteLessonById(lessonId);
+
+      // Assert - 外部キーのCASCADEで中間テーブルの行も消える
+      assertEquals(
+          0,
+          jdbcTemplate.queryForObject(
+              "SELECT COUNT(*) FROM lesson_tags WHERE lesson_id = ?", Integer.class, lessonId));
     }
   }
 }
