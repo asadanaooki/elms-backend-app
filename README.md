@@ -2,6 +2,7 @@
 
 受講生がオンラインでコース・レッスンを学習し、管理者がコース・ユーザー・お知らせを管理できる eラーニングプラットフォームのバックエンド API サーバーです。
 
+
 ## 技術スタック
 
 | 分類 | 技術 |
@@ -11,7 +12,7 @@
 | DB アクセス | Spring Data JDBC（JPA は不使用） |
 | DB | PostgreSQL 17 |
 | マイグレーション | Flyway |
-| 認証 | JWT（HttpOnly Cookie）+ RefreshToken |
+| 認証 | JWT Cookie（JS から読み取り可）+ RefreshToken Cookie（HttpOnly）。API リクエストは `Authorization: Bearer` |
 | パスワード | BCrypt |
 | メール送信 | Spring Mail（開発環境は Mailpit） |
 | ファイルストレージ | ローカルディスク（開発）/ AWS S3（本番） |
@@ -23,21 +24,25 @@
 
 ## 機能一覧
 
+**認証（共通）**
+- ログイン / ログアウト
+- JWT 再発行（RefreshToken Cookie 利用）
+- パスワードリセット（メール認証）
+
 **一般ユーザー（GENERAL ロール）**
 - コース一覧・詳細閲覧
 - レッスン視聴・受講完了マーク
 - お知らせ一覧・詳細閲覧
 - アカウント情報更新・パスワード変更
-- パスワードリセット（メール認証）
 
 **管理者（ADMIN ロール）**
 - コース CRUD・サムネイル設定
-- レッスングループ CRUD
+- レッスングループ作成・更新・削除（一覧・詳細の専用 API はなく、コース配下レッスン取得で参照）
 - レッスン CRUD・並び順変更
 - ユーザー CRUD・CSV インポート / エクスポート
 - お知らせ CRUD
 - ファイルアップロード（画像）
-- 全レッスン CSV エクスポート
+- レッスン CSV インポート / 全レッスン CSV エクスポート
 
 ## 前提条件
 
@@ -60,9 +65,11 @@ DB_NAME=elms_db
 DB_USER=root
 DB_PASS=pass
 DB_PORT=5433
+TZ=Asia/Tokyo
 MAIL_HOST=localhost
 MAIL_PORT=1025
 BASE_URL=http://localhost:3000
+SERVER_HOST=localhost
 JWT_SECRET=<base64エンコードの32バイト以上のシークレット>
 COOKIE_SECURE=false
 UPLOAD_DIR=uploads
@@ -265,11 +272,11 @@ flowchart TB
 
 **エンティティの性質**
 
-- **可変である。**  
-  人間が持つ年齢といった属性が変化するのと同じように、エンティティのフィールドは変化することが許容されています。エンティティのフィールドの値を変更する場合は、自身のメソッドを通じて変更する（値オブジェクトのようにインスタンス自体を変更する必要はなく、フィールドの変更で OK）。しかし、すべての属性を可変にする必要はなく、可能な限り不変にしておくほうがよい。
+- **同一性で区別される。**  
+  エンティティ同士を区別するためには識別子（いわゆる ID）が利用される。フィールド値が同じでも ID が異なれば別物として扱う。
 
-- **同じフィールド値であっても区別される。**  
-  エンティティ同士を区別するためには識別子（いわゆる ID。識別子は可変にする必要はなく、再代入不可能にするとよい）が利用される。フィールド値では区別されない。
+- **本プロジェクトでは Java の `record` で実装している。**  
+  一般的な DDD ではエンティティを可変とすることも多いが、本プロジェクトのエンティティ（`User` / `Course` / `Lesson` / `News` など）はすべて `record` であり、フィールドを破壊的に書き換えない。更新時は `update(...)` などで **新しいインスタンスを生成して返す**。
 
 **値オブジェクトとエンティティのどちらにするべきかの判断基準**
 
@@ -348,8 +355,11 @@ flowchart TB
 |---|---|---|
 | `command` | アプリケーションサービスのメソッドの引数に指定するコマンドオブジェクト | `～Command` |
 | `dto` | アプリケーションサービスのメソッドが戻り値として返す DTO | `～Dto` |
-| `converter` | ドメインオブジェクト ⇔ DTO の変換を担うクラス | `～DtoConverter` |
+| `exception` | アプリケーション層の例外 | — |
+| `util` | アプリケーション層のユーティリティ | — |
 | `service` | アプリケーションサービスのインターフェースおよび実装クラス | インターフェース: `ドメインの名前 + ApplicationService` / 実装: `ドメインの名前 + ApplicationServiceImpl` |
+
+ドメインオブジェクトと DTO の変換は、専用の converter クラスではなく、各 DTO の static ファクトリ（例: `CourseDto.from(...)`）で行う。
 
 `service` パッケージでインターフェースを用意している理由は、フロントエンドとバックエンドの実装者が異なる場合、バックエンドの実装待ちにならずにモックでテストできるようにするため。
 
@@ -360,6 +370,7 @@ flowchart TB
 | `model` | 値オブジェクトやエンティティ | — |
 | `repository` | リポジトリのインターフェース | `ドメインの名前 + Repository` |
 | `service` | ドメインサービスのインターフェースおよび実装クラス | インターフェース: `ドメインの名前 + DomainService` / 実装: `ドメインの名前 + DomainServiceImpl` |
+| `exception` | ドメイン層の例外（例: 値オブジェクトの不正値） | — |
 
 `repository` のインターフェースを `domain` に置く理由は、データソースに何を使用するかという具体的な情報（実装クラス）は `infrastructure` の責務であるため。インターフェースではデータソースに何を使用するかという具体的な実装はしないため、`domain` パッケージが適切。
 
@@ -372,6 +383,8 @@ flowchart TB
 | パッケージ | 配置するもの | 命名規則 |
 |---|---|---|
 | `dao` | データソースへの取得・作成・更新・削除を担うクラス（例: DB であれば SQL 実行） | `ドメインの名前 + Dao` |
+| `entity` | DB 行マッピング用の永続化モデル | `～Entity` |
+| `row` | 複数テーブル結合など、Dao の投影結果用の行クラス | `～Row` |
 | `repository` | リポジトリの実装クラス | `ドメインの名前 + RepositoryImpl` |
 | `security` | 認証・認可に関するクラス | — |
 
@@ -379,9 +392,11 @@ flowchart TB
 
 | パッケージ | 配置するもの | 命名規則 |
 |---|---|---|
-| （ルート） | API のエントリーポイントとなるコントローラー | `～Controller` |
+| `controller` | API のエントリーポイントとなるコントローラー | `～Controller` |
 | `request` | API のリクエストを受け取るためのオブジェクト | `～Request` |
 | `response` | API のレスポンスのオブジェクト | `～Response` |
+| `exception` | グローバル例外ハンドラー | — |
+| `scheduler` | 定期実行ジョブ | — |
 
 `response` について：アプリケーションサービスのメソッドの戻り値（DTO）と内容が変わらなければ、DTO をそのまま API のレスポンスとして返してよい。
 
@@ -390,6 +405,38 @@ flowchart TB
 メソッド名に関しては、以下のページを参考にしてください。一般的に望ましいとされているメソッド名であれば問題ありません。
 
 https://qiita.com/KeithYokoma/items/2193cf79ba76563e3db6
+
+#### 検査して例外をスローするメソッド
+
+戻り値がなく、条件を満たさない場合に例外をスローするメソッドは `throwExceptionIf〜` とします。
+
+**例外が飛ぶ「異常条件」を名前にする**のがポイントです。`validate〜` だと何が起きるかが読み取れず、`throwExceptionIf` の後ろに正常条件を置くと意味が逆になってしまいます。
+
+| ✅ 良い例 | ❌ 悪い例 | 理由 |
+|---|---|---|
+| `throwExceptionIfCourseNotExists` | `validateCourseExists` | 呼び出し側で「何が起きるか」が分からない |
+| `throwExceptionIfCourseNotExists` | `throwExceptionIfCourseExists` | 「存在したら例外」という逆の意味になる |
+| `throwExceptionIfAdminNotIncluded` | `validateAdminIncluded` | 同上 |
+| `throwExceptionIfCsvFileInvalid` | `validateCsvFile` | 同上 |
+
+Javadoc も「〜の場合に例外をスローする。」で揃えます。
+
+```java
+/**
+ * コースが存在しない場合に例外をスローする。
+ *
+ * <p>検証しないまま登録すると外部キー制約違反となり、クライアント起因の誤りが500として返ってしまう。
+ *
+ * @param courseId コースID
+ */
+private void throwExceptionIfCourseNotExists(UUID courseId) {
+  courseRepository
+      .findCourseById(courseId)
+      .orElseThrow(() -> new ResourceNotFoundException(Course.class, String.valueOf(courseId)));
+}
+```
+
+なお、値を返しつつ見つからなければ例外をスローするメソッドは `〜OrThrow` とします（例: `findLessonOrThrow`）。
 
 ## プロジェクト構成
 
@@ -406,13 +453,17 @@ src/main/java/com/everrefine/elms/
 │   ├── command/           # ユースケース入力
 │   ├── dto/               # ユースケース出力
 │   ├── exception/         # アプリケーション例外
+│   ├── util/              # アプリケーション層ユーティリティ
 │   └── service/           # ユースケース実装
 ├── domain/
 │   ├── model/             # エンティティ・値オブジェクト
 │   ├── repository/        # リポジトリインターフェース
-│   └── service/           # ドメインサービス
+│   ├── service/           # ドメインサービス
+│   └── exception/         # ドメイン例外
 └── infrastructure/
     ├── dao/               # Spring Data JDBC インターフェース
+    ├── entity/            # 永続化エンティティ
+    ├── row/               # 結合クエリ等の行クラス
     ├── repository/        # リポジトリ実装
     └── security/          # JWT フィルター・Spring Security 設定
 src/main/resources/
@@ -453,3 +504,46 @@ http://localhost:8025
 ```
 
 テストは Testcontainers で PostgreSQL コンテナを自動起動して実行します（Docker が必要です）。
+
+### テストの書き方
+
+#### クラス名・構造
+
+- テストクラス名は **実装クラス名 + `Test`**（例: `UserApplicationServiceImpl` → `UserApplicationServiceImplTest`）
+- パッケージは実装クラスと同じ構成にする
+- `@Nested` で**操作単位**に分ける。クラス名は日本語で `〜取得` / `〜作成` / `〜更新` / `〜削除` のようにする
+- **`正常系` / `異常系` で分けない**。同じ操作の成功ケースと失敗ケースは同じ `@Nested` にまとめる
+
+#### メソッド名
+
+- `正常系_` / `異常系_` の接頭辞は付けない
+- 「〜であること」「〜が返ること」の形で書く
+- 例外を検証する場合は**例外クラス名を含める**（`〜Exception が投げられること`）
+- **数字で始めない**（Java の識別子として不正になる。`2つのレッスンの間に…` ではなく `指定した2つのレッスンの間に…`）
+
+```java
+@Nested
+class レッスン取得 {
+
+  @Test
+  void レッスンをIDで取得できること() { ... }
+
+  @Test
+  void 存在しないレッスンIDでResourceNotFoundExceptionが投げられること() { ... }
+}
+```
+
+#### テストデータと検証
+
+- **前提データの作成**は `testsupport.TestDataFactory` を使う（生SQLはこのクラスに集約する）
+  - テスト対象のサービスやリポジトリで前提データを作らない。テスト対象が壊れているとき「検証の失敗」ではなく「準備中のエラー」になり、原因が分からなくなるため
+- **検証（assert）は生SQL（`JdbcTemplate`）で行う**
+  - DAO やリポジトリ経由で検証すると、マッピングが誤っていても「間違ったまま書いて、間違ったまま読む」ため気付けない
+  - 検証用SQLは `TestDataFactory` に集約せず、各テストメソッドに残す
+
+#### HTTPステータスの検証
+
+コントローラーの `@ApiResponse` と実際のレスポンスが食い違わないよう、`GlobalExceptionHandlerTest` で
+**例外ハンドラを通った後の実際のHTTPステータス**を検証しています。サービス層の例外型だけを見ると、
+`@ExceptionHandler(Exception.class)` の catch-all に飲み込まれて500になっていても気付けません。
+例外ハンドリングを変更したときは、このテストが通ることを確認してください。

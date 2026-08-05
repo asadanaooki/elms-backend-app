@@ -1,17 +1,26 @@
 package com.everrefine.elms.application.dto;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
-import com.everrefine.elms.domain.model.lesson.LessonWithTag;
-import com.everrefine.elms.domain.model.tag.Tag;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessons;
+import com.everrefine.elms.domain.model.lesson.LessonInGroup;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import lombok.Getter;
+import java.util.UUID;
 
-/** レッスン DTO。 */
-@Getter
-public class LessonDto extends BaseLessonDto {
+/** レッスンのDTO。 */
+public record LessonDto(
+    @Schema(description = "レッスンID", example = "1") UUID id,
+    @Schema(description = "レッスングループID", example = "2") UUID lessonGroupId,
+    @Schema(description = "コースID", example = "3") UUID courseId,
+    @Schema(description = "レッスンの表示順", example = "1.0") BigDecimal lessonOrder,
+    @Schema(description = "レッスンタイトル", example = "変数とデータ型") String title,
+    @Schema(description = "レッスン本文（Markdown対応）", example = "## 変数とは\n変数はデータを格納する箱です。")
+        String content,
+    @Schema(description = "動画URL", example = "https://example.com/videos/lesson1.mp4")
+        String videoUrl,
+    @Schema(description = "登録日時", example = "2024-01-01T09:00:00") LocalDateTime createdAt,
+    @Schema(description = "更新日時", example = "2024-06-01T10:30:00") LocalDateTime updatedAt) {
 
   /**
    * LessonエンティティからLessonDtoを生成する。
@@ -19,81 +28,36 @@ public class LessonDto extends BaseLessonDto {
    * @param lesson レッスンエンティティ
    * @return レッスンDTO
    */
-  public static LessonDto from(Lesson lesson, List<Tag> tags) {
+  public static LessonDto from(Lesson lesson) {
     return new LessonDto(
-        lesson.getId(),
-        lesson.getLessonGroupId(),
-        lesson.getCourseId(),
-        lesson.getLessonOrder().getValue(),
-        lesson.getTitle().getValue(),
-        lesson.getContent() != null ? lesson.getContent().getValue() : null,
-        lesson.getVideoUrl() != null ? lesson.getVideoUrl().getValue() : null,
-        TagDto.from(tags),
-        lesson.getCreatedAt(),
-        lesson.getUpdatedAt());
+        lesson.id(),
+        lesson.lessonGroupId(),
+        lesson.courseId(),
+        lesson.lessonOrder().value(),
+        lesson.title().value(),
+        lesson.content() != null ? lesson.content().value() : null,
+        lesson.videoUrl() != null ? lesson.videoUrl().value() : null,
+        lesson.createdAt(),
+        lesson.updatedAt());
   }
 
   /**
-   * LessonGroupWithLessonからLessonDtoを生成する。
+   * レッスングループと配下レッスンの読み取りモデルからLessonDtoを生成する。
    *
-   * @param lessonGroupWithLesson レッスングループとレッスンの結合情報
+   * @param group 所属するレッスングループの読み取りモデル
+   * @param lesson レッスングループ配下のレッスン読み取りモデル
    * @return レッスンDTO
    */
-  public static LessonDto from(LessonGroupWithLesson lessonGroupWithLesson) {
+  public static LessonDto from(LessonGroupWithLessons group, LessonInGroup lesson) {
     return new LessonDto(
-        lessonGroupWithLesson.getLessonId(),
-        lessonGroupWithLesson.getLessonGroupId(),
-        lessonGroupWithLesson.getCourseId(),
-        lessonGroupWithLesson.getLessonOrder(),
-        lessonGroupWithLesson.getLessonTitle(),
-        lessonGroupWithLesson.getLessonContent(),
-        lessonGroupWithLesson.getLessonVideoUrl(),
-        TagDto.from(lessonGroupWithLesson.getTags()),
-        lessonGroupWithLesson.getLessonCreatedAt(),
-        lessonGroupWithLesson.getLessonUpdatedAt());
-  }
-
-  /**
-   * LessonWithTagからLessonDtoを生成する。
-   *
-   * @param lessonWithTag レッスンとタグの結合情報
-   * @return レッスンDTO
-   */
-  public static LessonDto from(LessonWithTag lessonWithTag) {
-    return new LessonDto(
-        lessonWithTag.getLessonId(),
-        lessonWithTag.getLessonGroupId(),
-        lessonWithTag.getCourseId(),
-        lessonWithTag.getLessonOrder(),
-        lessonWithTag.getLessonTitle(),
-        lessonWithTag.getLessonContent(),
-        lessonWithTag.getLessonVideoUrl(),
-        TagDto.from(lessonWithTag.getTags()),
-        lessonWithTag.getLessonCreatedAt(),
-        lessonWithTag.getLessonUpdatedAt());
-  }
-
-  private LessonDto(
-      Integer id,
-      Integer lessonGroupId,
-      Integer courseId,
-      BigDecimal lessonOrder,
-      String title,
-      String content,
-      String videoUrl,
-      List<TagDto> tags,
-      LocalDateTime createdAt,
-      LocalDateTime updatedAt) {
-    super(
-        id,
-        lessonGroupId,
-        courseId,
-        lessonOrder,
-        title,
-        content,
-        videoUrl,
-        tags,
-        createdAt,
-        updatedAt);
+        lesson.id(),
+        group.id(),
+        group.courseId(),
+        lesson.lessonOrder(),
+        lesson.title(),
+        lesson.content(),
+        lesson.videoUrl(),
+        lesson.createdAt(),
+        lesson.updatedAt());
   }
 }

@@ -2,20 +2,16 @@ package com.everrefine.elms.application.command;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import java.math.BigDecimal;
-import java.util.List;
-import lombok.Data;
+import java.util.UUID;
 
 /** レッスン作成用のコマンド。 */
-@Data
-public class LessonCreateCommand {
-
-  private final Integer courseId;
-  private final Integer lessonGroupId;
-  private final String title;
-  private final String content;
-  private final String videoUrl;
-  private final BigDecimal lessonOrder;
-  private final List<String> tagNames;
+public record LessonCreateCommand(
+    UUID courseId,
+    UUID lessonGroupId,
+    String title,
+    String content,
+    String videoUrl,
+    BigDecimal lessonOrder) {
 
   /**
    * Lessonエンティティに変換する。

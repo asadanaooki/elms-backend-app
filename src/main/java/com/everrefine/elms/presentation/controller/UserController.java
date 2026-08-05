@@ -19,7 +19,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -85,7 +85,7 @@ public class UserController {
   })
   @PreAuthorize("hasAuthority('ADMIN') or #userId.toString() == authentication.name")
   @GetMapping("/{userId}")
-  public UserDto findUserById(@PathVariable @Positive Integer userId) {
+  public UserDto findUserById(@PathVariable UUID userId) {
     return userApplicationService.findUserById(userId);
   }
 
@@ -141,13 +141,14 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "取込成功"),
     @ApiResponse(responseCode = "400", description = "バリデーションエラー"),
     @ApiResponse(responseCode = "401", description = "認証されていません"),
-    @ApiResponse(responseCode = "403", description = "管理者権限が必要です")
+    @ApiResponse(responseCode = "403", description = "管理者権限が必要です"),
+    @ApiResponse(responseCode = "404", description = "現在ログイン中のユーザーが見つかりません")
   })
   @PreAuthorize("hasAuthority('ADMIN')")
   @PostMapping("/import")
   public ResponseEntity<UserImportResponseDto> importUsersCsv(
       @RequestParam("file") @NotNull MultipartFile file, Authentication authentication) {
-    Integer currentUserId = Integer.parseInt(authentication.getName());
+    UUID currentUserId = UUID.fromString(authentication.getName());
     UserImportCommand userImportCommand = UserImportCommand.from(file, currentUserId);
     UserImportResponseDto response = userApplicationService.importUsersCsv(userImportCommand);
     return ResponseEntity.ok(response);
@@ -170,8 +171,7 @@ public class UserController {
   @PreAuthorize("hasAuthority('ADMIN') or #userId.toString() == authentication.name")
   @PutMapping("/{userId}")
   public void updateUser(
-      @PathVariable @Positive Integer userId,
-      @RequestBody @Valid UserUpdateRequest userUpdateRequest) {
+      @PathVariable UUID userId, @RequestBody @Valid UserUpdateRequest userUpdateRequest) {
     UserUpdateCommand userUpdateCommand = userUpdateRequest.toCommand(userId);
     userApplicationService.updateUser(userUpdateCommand);
   }
@@ -186,8 +186,7 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "変更成功"),
     @ApiResponse(responseCode = "400", description = "パスワードが一致しません"),
     @ApiResponse(responseCode = "401", description = "認証されていません"),
-    @ApiResponse(responseCode = "404", description = "ユーザーが存在しません"),
-    @ApiResponse(responseCode = "500", description = "サーバーで想定外のエラーが起きました")
+    @ApiResponse(responseCode = "404", description = "ユーザーが存在しません")
   })
   @PutMapping("/password")
   public void updatePassword(@RequestBody @Valid PasswordUpdateRequest passwordUpdateRequest) {
@@ -205,13 +204,12 @@ public class UserController {
     @ApiResponse(responseCode = "204", description = "削除成功"),
     @ApiResponse(responseCode = "400", description = "バリデーションエラー"),
     @ApiResponse(responseCode = "401", description = "認証されていません"),
-    @ApiResponse(responseCode = "403", description = "管理者権限が必要です"),
-    @ApiResponse(responseCode = "404", description = "ユーザーが見つかりません")
+    @ApiResponse(responseCode = "403", description = "管理者権限が必要です")
   })
   @PreAuthorize("hasAuthority('ADMIN')")
   @DeleteMapping("/{userId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteUserById(@PathVariable @Positive Integer userId) {
+  public void deleteUserById(@PathVariable UUID userId) {
     userApplicationService.deleteUserById(userId);
   }
 }
