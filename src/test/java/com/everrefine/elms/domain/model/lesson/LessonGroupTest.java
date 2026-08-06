@@ -9,127 +9,134 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.everrefine.elms.domain.exception.InvalidValueException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class LessonGroupTest {
 
-  @Test
-  void 正常系_createで新しいレッスングループが作成されること() {
-    // Arrange & Act
-    LessonGroup lessonGroup = LessonGroup.create(100, new BigDecimal("1"), "テストグループ");
+  @Nested
+  class レッスングループ作成 {
+    @Test
+    void createで新しいレッスングループが作成されること() {
+      // Arrange & Act
+      UUID courseId = UUID.randomUUID();
+      LessonGroup lessonGroup = LessonGroup.create(courseId, new BigDecimal("1"), "テストグループ");
 
-    // Assert
-    assertEquals(null, lessonGroup.getId());
-    assertEquals(100, lessonGroup.getCourseId());
-    assertEquals(new BigDecimal("1"), lessonGroup.getLessonGroupOrder().getValue());
-    assertEquals("テストグループ", lessonGroup.getTitle().getValue());
-    assertNotNull(lessonGroup.getCreatedAt()); // createメソッドで設定される
-    assertNotNull(lessonGroup.getUpdatedAt()); // createメソッドで設定される
+      // Assert
+      assertEquals(null, lessonGroup.id());
+      assertEquals(courseId, lessonGroup.courseId());
+      assertEquals(new BigDecimal("1"), lessonGroup.lessonGroupOrder().value());
+      assertEquals("テストグループ", lessonGroup.title().value());
+      assertNotNull(lessonGroup.createdAt()); // createメソッドで設定される
+      assertNotNull(lessonGroup.updatedAt()); // createメソッドで設定される
+    }
   }
 
-  @Test
-  void 正常系_updateで新しいインスタンスが作成され不変性が保たれること() {
-    // Arrange
-    LocalDateTime originalCreatedAt = LocalDateTime.of(2025, 12, 10, 10, 0);
-    LocalDateTime originalUpdatedAt = LocalDateTime.of(2025, 12, 10, 10, 0);
+  @Nested
+  class レッスングループ更新 {
+    @Test
+    void updateで新しいインスタンスが作成され不変性が保たれること() {
+      // Arrange
+      LocalDateTime originalCreatedAt = LocalDateTime.of(2025, 12, 10, 10, 0);
+      LocalDateTime originalUpdatedAt = LocalDateTime.of(2025, 12, 10, 10, 0);
 
-    LessonGroup original =
-        new LessonGroup(
-            1,
-            100,
-            new com.everrefine.elms.domain.model.Order(new BigDecimal("1")),
-            new Title("元のタイトル"),
-            originalCreatedAt,
-            originalUpdatedAt);
+      LessonGroup original =
+          new LessonGroup(
+              UUID.randomUUID(),
+              UUID.randomUUID(),
+              new com.everrefine.elms.domain.model.Order(new BigDecimal("1")),
+              new LessonTitle("元のタイトル"),
+              originalCreatedAt,
+              originalUpdatedAt);
 
-    // Act
-    LocalDateTime beforeUpdate = LocalDateTime.now();
-    LessonGroup updated = original.update("新しいタイトル");
-    LocalDateTime afterUpdate = LocalDateTime.now();
+      // Act
+      LocalDateTime beforeUpdate = LocalDateTime.now();
+      LessonGroup updated = original.update("新しいタイトル");
+      LocalDateTime afterUpdate = LocalDateTime.now();
 
-    // Assert - 新しいインスタンスが作成されていること
-    assertNotEquals(original, updated);
+      // Assert - 新しいインスタンスが作成されていること
+      assertNotEquals(original, updated);
 
-    // Assert - 不変なフィールドが保持されていること
-    assertEquals(original.getId(), updated.getId());
-    assertEquals(original.getCourseId(), updated.getCourseId());
-    assertEquals(original.getLessonGroupOrder(), updated.getLessonGroupOrder());
-    assertEquals(original.getCreatedAt(), updated.getCreatedAt());
+      // Assert - 不変なフィールドが保持されていること
+      assertEquals(original.id(), updated.id());
+      assertEquals(original.courseId(), updated.courseId());
+      assertEquals(original.lessonGroupOrder(), updated.lessonGroupOrder());
+      assertEquals(original.createdAt(), updated.createdAt());
 
-    // Assert - タイトルが更新されていること
-    assertEquals("新しいタイトル", updated.getTitle().getValue());
-    assertEquals("元のタイトル", original.getTitle().getValue());
+      // Assert - タイトルが更新されていること
+      assertEquals("新しいタイトル", updated.title().value());
+      assertEquals("元のタイトル", original.title().value());
 
-    // Assert - updatedAtが更新されていること
-    assertNotEquals(original.getUpdatedAt(), updated.getUpdatedAt());
-    assertTrue(
-        updated.getUpdatedAt().isAfter(beforeUpdate)
-            || updated.getUpdatedAt().isEqual(beforeUpdate));
-    assertTrue(
-        updated.getUpdatedAt().isBefore(afterUpdate)
-            || updated.getUpdatedAt().isEqual(afterUpdate));
+      // Assert - updatedAtが更新されていること
+      assertNotEquals(original.updatedAt(), updated.updatedAt());
+      assertTrue(
+          updated.updatedAt().isAfter(beforeUpdate) || updated.updatedAt().isEqual(beforeUpdate));
+      assertTrue(
+          updated.updatedAt().isBefore(afterUpdate) || updated.updatedAt().isEqual(afterUpdate));
 
-    // Assert - 元のインスタンスは変更されていないこと
-    assertEquals("元のタイトル", original.getTitle().getValue());
-    assertEquals(originalUpdatedAt, original.getUpdatedAt());
-  }
+      // Assert - 元のインスタンスは変更されていないこと
+      assertEquals("元のタイトル", original.title().value());
+      assertEquals(originalUpdatedAt, original.updatedAt());
+    }
 
-  @Test
-  void 正常系_updateで同じタイトルを設定しても新しいインスタンスが作成されること() {
-    // Arrange
-    LocalDateTime originalCreatedAt = LocalDateTime.of(2025, 12, 10, 10, 0);
-    LocalDateTime originalUpdatedAt = LocalDateTime.of(2025, 12, 10, 10, 0);
+    @Test
+    void updateで同じタイトルを設定しても新しいインスタンスが作成されること() {
+      // Arrange
+      LocalDateTime originalCreatedAt = LocalDateTime.of(2025, 12, 10, 10, 0);
+      LocalDateTime originalUpdatedAt = LocalDateTime.of(2025, 12, 10, 10, 0);
 
-    LessonGroup original =
-        new LessonGroup(
-            1,
-            100,
-            new com.everrefine.elms.domain.model.Order(new BigDecimal("1")),
-            new Title("同じタイトル"),
-            originalCreatedAt,
-            originalUpdatedAt);
+      LessonGroup original =
+          new LessonGroup(
+              UUID.randomUUID(),
+              UUID.randomUUID(),
+              new com.everrefine.elms.domain.model.Order(new BigDecimal("1")),
+              new LessonTitle("同じタイトル"),
+              originalCreatedAt,
+              originalUpdatedAt);
 
-    // Act
-    LessonGroup updated = original.update("同じタイトル");
+      // Act
+      LessonGroup updated = original.update("同じタイトル");
 
-    // Assert - 新しいインスタンスが作成されていること
-    assertNotEquals(original, updated);
-    // Assert - updatedAtは更新されること（LocalDateTime.now()が呼ばれるため）
-    assertNotEquals(original.getUpdatedAt(), updated.getUpdatedAt());
-  }
+      // Assert - 新しいインスタンスが作成されていること
+      assertNotEquals(original, updated);
+      // Assert - updatedAtは更新されること（LocalDateTime.now()が呼ばれるため）
+      assertNotEquals(original.updatedAt(), updated.updatedAt());
+    }
 
-  @Test
-  void 正常系_updateで空文字を設定できること() {
-    // Arrange
-    LessonGroup original =
-        new LessonGroup(
-            1,
-            100,
-            new com.everrefine.elms.domain.model.Order(new BigDecimal("1")),
-            new Title("元のタイトル"),
-            LocalDateTime.now(),
-            LocalDateTime.now());
+    @Test
+    void updateで空文字を設定できること() {
+      // Arrange
+      LessonGroup original =
+          new LessonGroup(
+              UUID.randomUUID(),
+              UUID.randomUUID(),
+              new com.everrefine.elms.domain.model.Order(new BigDecimal("1")),
+              new LessonTitle("元のタイトル"),
+              LocalDateTime.now(),
+              LocalDateTime.now());
 
-    // Act
-    LessonGroup updated = original.update("");
+      // Act
+      LessonGroup updated = original.update("");
 
-    // Assert
-    assertEquals("", updated.getTitle().getValue());
-  }
+      // Assert
+      assertEquals("", updated.title().value());
+    }
 
-  @Test
-  void 異常系_updateでnullを設定すると例外がスローされること() {
-    // Arrange
-    LessonGroup original =
-        new LessonGroup(
-            1,
-            100,
-            new com.everrefine.elms.domain.model.Order(new BigDecimal("1")),
-            new Title("元のタイトル"),
-            LocalDateTime.now(),
-            LocalDateTime.now());
+    @Test
+    void updateでnullを設定するとInvalidValueExceptionが投げられること() {
+      // Arrange
+      LessonGroup original =
+          new LessonGroup(
+              UUID.randomUUID(),
+              UUID.randomUUID(),
+              new com.everrefine.elms.domain.model.Order(new BigDecimal("1")),
+              new LessonTitle("元のタイトル"),
+              LocalDateTime.now(),
+              LocalDateTime.now());
 
-    // Act & Assert
-    assertThrows(InvalidValueException.class, () -> original.update(null));
+      // Act & Assert
+      assertThrows(InvalidValueException.class, () -> original.update(null));
+    }
   }
 }

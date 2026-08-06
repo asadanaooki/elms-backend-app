@@ -1,7 +1,8 @@
 package com.everrefine.elms.domain.repository;
 
-import com.everrefine.elms.domain.model.LessonTag;
+import com.everrefine.elms.domain.model.tag.LessonTag;
 import java.util.List;
+import java.util.UUID;
 
 /** レッスンタグのリポジトリインターフェース。 */
 public interface LessonTagRepository {
@@ -11,7 +12,7 @@ public interface LessonTagRepository {
    *
    * @param lessonId レッスンID
    */
-  void deleteAllByLessonId(Integer lessonId);
+  void deleteAllByLessonId(UUID lessonId);
 
   /**
    * 複数のレッスンタグを作成する。

@@ -1,13 +1,14 @@
 package com.everrefine.elms.domain.repository;
 
 import com.everrefine.elms.domain.model.lesson.Lesson;
-import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
+import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessons;
+import com.everrefine.elms.domain.model.lesson.LessonInGroup;
 import com.everrefine.elms.domain.model.lesson.LessonSearchCriteria;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
-import com.everrefine.elms.domain.model.lesson.LessonWithTag;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /** レッスンのリポジトリインターフェース。 */
 public interface LessonRepository {
@@ -18,7 +19,7 @@ public interface LessonRepository {
    * @param lessonId レッスンID
    * @return レッスン（存在しない場合は空）
    */
-  Optional<Lesson> findById(Integer lessonId);
+  Optional<Lesson> findById(UUID lessonId);
 
   /**
    * 複数のIDでレッスン一覧を取得する。
@@ -26,7 +27,7 @@ public interface LessonRepository {
    * @param lessonIds レッスンIDのリスト
    * @return レッスン一覧
    */
-  List<Lesson> findByIdIn(List<Integer> lessonIds);
+  List<Lesson> findByIdIn(List<UUID> lessonIds);
 
   /**
    * 検索条件に合致するレッスン一覧を取得する。
@@ -45,12 +46,12 @@ public interface LessonRepository {
   int countLessons(LessonSearchCriteria criteria);
 
   /**
-   * レッスングループIDに紐づくレッスン一覧を取得する。
+   * レッスングループIDに紐づくレッスン一覧を、紐づくタグとあわせて取得する。
    *
    * @param lessonGroupId レッスングループID
    * @return レッスン一覧
    */
-  List<LessonWithTag> findLessonsByLessonGroupId(Integer lessonGroupId);
+  List<LessonInGroup> findLessonsByLessonGroupId(UUID lessonGroupId);
 
   /**
    * コースIDに紐づくレッスングループごとのレッスン一覧を取得する。
@@ -58,7 +59,7 @@ public interface LessonRepository {
    * @param courseId コースID
    * @return レッスングループとレッスンの一覧
    */
-  List<LessonGroupWithLesson> findLessonsGroupedByLessonGroup(Integer courseId);
+  List<LessonGroupWithLessons> findLessonsGroupedByLessonGroup(UUID courseId);
 
   /**
    * レッスンを作成する。
@@ -67,6 +68,13 @@ public interface LessonRepository {
    * @return 作成されたレッスン
    */
   Lesson createLesson(Lesson lesson);
+
+  /**
+   * 複数のレッスンを作成する。
+   *
+   * @param lessons 作成するレッスンのリスト
+   */
+  void createLessons(List<Lesson> lessons);
 
   /**
    * レッスンを更新する。
@@ -82,14 +90,21 @@ public interface LessonRepository {
    * @param lessonGroupId レッスングループID
    * @return 最大lesson_order（レッスンが存在しない場合は空）
    */
-  Optional<BigDecimal> findMaxLessonOrderByLessonGroupId(Integer lessonGroupId);
+  Optional<BigDecimal> findMaxLessonOrderByLessonGroupId(UUID lessonGroupId);
 
   /**
    * IDでレッスンを削除する。
    *
    * @param lessonId レッスンID
    */
-  void deleteLessonById(Integer lessonId);
+  void deleteLessonById(UUID lessonId);
+
+  /**
+   * コースIDに紐づくレッスンを削除する。
+   *
+   * @param courseId コースID
+   */
+  void deleteLessonsByCourseId(UUID courseId);
 
   /**
    * レッスンの総件数を取得する。

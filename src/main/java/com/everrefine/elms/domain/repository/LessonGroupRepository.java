@@ -2,7 +2,9 @@ package com.everrefine.elms.domain.repository;
 
 import com.everrefine.elms.domain.model.lesson.LessonGroup;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /** レッスングループのリポジトリインターフェース。 */
 public interface LessonGroupRepository {
@@ -14,6 +16,15 @@ public interface LessonGroupRepository {
    * @return 作成されたレッスングループ
    */
   LessonGroup createLessonGroup(LessonGroup lessonGroup);
+
+  /**
+   * 複数のレッスングループを一括登録する。
+   *
+   * <p>IDは呼び出し側で採番済みであること。
+   *
+   * @param lessonGroups 作成するレッスングループリスト（IDは採番済み）
+   */
+  void createLessonGroups(List<LessonGroup> lessonGroups);
 
   /**
    * レッスングループを更新する。
@@ -29,7 +40,7 @@ public interface LessonGroupRepository {
    * @param courseId コースID
    * @return 最大lesson_group_order（レッスングループが存在しない場合は空）
    */
-  Optional<BigDecimal> findMaxLessonGroupOrderByCourseId(Integer courseId);
+  Optional<BigDecimal> findMaxLessonGroupOrderByCourseId(UUID courseId);
 
   /**
    * IDでレッスングループを取得する。
@@ -37,12 +48,19 @@ public interface LessonGroupRepository {
    * @param id レッスングループID
    * @return レッスングループ（存在しない場合は空）
    */
-  Optional<LessonGroup> findLessonGroupById(Integer id);
+  Optional<LessonGroup> findLessonGroupById(UUID id);
 
   /**
    * IDでレッスングループを削除する。
    *
    * @param id レッスングループID
    */
-  void deleteLessonGroupById(Integer id);
+  void deleteLessonGroupById(UUID id);
+
+  /**
+   * コースIDに紐づくレッスングループを削除する。
+   *
+   * @param courseId コースID
+   */
+  void deleteLessonGroupsByCourseId(UUID courseId);
 }
