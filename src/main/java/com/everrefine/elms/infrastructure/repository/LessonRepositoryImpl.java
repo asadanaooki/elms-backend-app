@@ -4,6 +4,7 @@ import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLesson;
 import com.everrefine.elms.domain.model.lesson.LessonSearchCriteria;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
+import com.everrefine.elms.domain.model.lesson.LessonWithTag;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.infrastructure.dao.LessonDao;
 import com.everrefine.elms.infrastructure.dao.LessonGroupDao;
@@ -70,7 +71,7 @@ public class LessonRepositoryImpl implements LessonRepository {
   }
 
   @Override
-  public List<Lesson> findLessonsByLessonGroupId(Integer lessonGroupId) {
+  public List<LessonWithTag> findLessonsByLessonGroupId(Integer lessonGroupId) {
     return lessonDao.findLessonsByLessonGroupId(lessonGroupId);
   }
 

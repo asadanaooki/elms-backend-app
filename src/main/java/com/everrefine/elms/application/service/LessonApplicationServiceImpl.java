@@ -139,7 +139,16 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     BigDecimal lessonOrder =
         lessonDomainService.issueLessonOrder(lessonCreateCommand.getLessonGroupId());
     Lesson createdLesson = lessonRepository.createLesson(lessonCreateCommand.toLesson(lessonOrder));
-    return LessonDto.from(createdLesson, Collections.emptyList());
+
+    List<String> requestedTagNames = lessonCreateCommand.getTagNames();
+    if (requestedTagNames.isEmpty()) {
+      return LessonDto.from(createdLesson, Collections.emptyList());
+    }
+
+    List<Tag> tagsInRequestOrder =
+        createOrReplaceLessonTags(createdLesson.getId(), requestedTagNames);
+
+    return LessonDto.from(createdLesson, tagsInRequestOrder);
   }
 
   @Override
@@ -150,7 +159,8 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson updatedLesson =
         lessonRepository.updateLesson(lessonUpdateCommand.toLesson(currentLesson));
 
-    List<Tag> associatedTags = replaceLessonTags(lessonId, lessonUpdateCommand.getTagNames());
+    List<Tag> associatedTags =
+        createOrReplaceLessonTags(lessonId, lessonUpdateCommand.getTagNames());
 
     return LessonDto.from(updatedLesson, associatedTags);
   }
@@ -218,7 +228,9 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson updatedLesson = targetLesson.updateOrder(newOrder);
     Lesson savedLesson = lessonRepository.updateLesson(updatedLesson);
 
-    return LessonDto.from(savedLesson, Collections.emptyList());
+    List<Tag> tags = tagRepository.findAllTagsByLessonId(targetLessonId);
+
+    return LessonDto.from(savedLesson, tags);
   }
 
   @Transactional(readOnly = true)
@@ -279,36 +291,40 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     return new ByteArrayResource(baos.toByteArray());
   }
 
-  private List<Tag> replaceLessonTags(Integer lessonId, List<String> requestedTagNames) {
+  private List<Tag> createOrReplaceLessonTags(Integer lessonId, List<String> requestedTagNames) {
+    if (requestedTagNames.isEmpty()) {
+      lessonTagRepository.deleteAllByLessonId(lessonId);
+      return List.of();
+    }
+
+    // 正規化
     Map<String, Tag> uniqueTagsByName = new LinkedHashMap<>();
     requestedTagNames.stream()
         .map(Tag::create)
         .forEach(t -> uniqueTagsByName.putIfAbsent(t.getName().getValue(), t));
-
     List<Tag> normalizedTags = new ArrayList<Tag>(uniqueTagsByName.values());
-    if (normalizedTags.isEmpty()) {
-      lessonTagRepository.deleteAllByLessonId(lessonId);
 
-      return List.of();
-    }
+    List<String> existingTagNames =
+        tagRepository
+            .findAllTagsByNames(normalizedTags.stream().map(Tag::getName).toList())
+            .stream()
+            .map(t -> t.getName().getValue())
+            .toList();
+    // 未登録のタグを抽出
+    List<Tag> tagsToCreate =
+        normalizedTags.stream()
+            .filter(t -> !existingTagNames.contains(t.getName().getValue()))
+            .toList();
+    tagRepository.createTags(tagsToCreate);
 
-    // 正規化済みのタグと既存タグをマージし、保存する
-    List<Tag> existingTags =
-        tagRepository.findAllTagsByNames(normalizedTags.stream().map(Tag::getName).toList());
-    Map<TagName, Tag> existingTagMap =
-        existingTags.stream().collect(Collectors.toMap(Tag::getName, Function.identity()));
-    List<Tag> mergedTags =
-        normalizedTags.stream().map(t -> existingTagMap.getOrDefault(t.getName(), t)).toList();
-    tagRepository.saveTags(mergedTags);
-
-    // 正規化後のタグ名に対応するタグを、既存タグを含めて取得（レッスンタグの洗い替えのために使用）
+    // 正規化後のタグ名に対応するタグを、既存タグを含めてリクエストと同じ順で取得
     List<Tag> tagsInRequestOrder = findTagsInRequestOrder(normalizedTags);
 
     // レッスンタグの洗い替え
     lessonTagRepository.deleteAllByLessonId(lessonId);
     List<LessonTag> lessonTagAssociations =
         tagsInRequestOrder.stream().map(t -> LessonTag.create(lessonId, t.getId())).toList();
-    lessonTagRepository.saveAll(lessonTagAssociations);
+    lessonTagRepository.createLessonTags(lessonTagAssociations);
 
     return tagsInRequestOrder;
   }

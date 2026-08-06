@@ -10,7 +10,6 @@ import com.everrefine.elms.domain.repository.LessonGroupRepository;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.domain.service.LessonGroupDomainService;
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -52,7 +51,7 @@ public class LessonGroupApplicationServiceImpl implements LessonGroupApplication
 
     List<LessonDto> lessonDtos =
         lessonRepository.findLessonsByLessonGroupId(persistedLessonGroup.getId()).stream()
-            .map(l -> LessonDto.from(l, Collections.emptyList()))
+            .map(lesson -> LessonDto.from(lesson))
             .toList();
 
     return LessonGroupDto.from(persistedLessonGroup, lessonDtos);
