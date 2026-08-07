@@ -13,6 +13,6 @@ public class ElmsApplication {
    * @param args コマンドライン引数
    */
   public static void main(String[] args) {
-    SpringApplication.run( ElmsApplication.class,args );
+    SpringApplication.run(ElmsApplication.class, args);
   }
 }
