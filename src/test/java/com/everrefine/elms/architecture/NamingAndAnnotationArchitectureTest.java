@@ -18,25 +18,25 @@ import org.springframework.web.bind.annotation.RestController;
 class NamingAndAnnotationArchitectureTest {
 
   @ArchTest
-  static final ArchRule rule08_requests_must_have_request_suffix =
+  static final ArchRule presentationのrequestクラス名はRequestで終わること =
       classes()
           .that()
           .resideInAPackage("..presentation.request..")
           .should()
           .haveSimpleNameEndingWith("Request")
-          .as("Rule 8: presentation request classes must end with Request");
+          .as("Rule 8: presentation.requestパッケージのクラス名はRequestで終わること");
 
   @ArchTest
-  static final ArchRule rule09_rest_controllers_must_have_controller_suffix =
+  static final ArchRule restControllerクラス名はControllerで終わること =
       classes()
           .that()
           .areAnnotatedWith(RestController.class)
           .should()
           .haveSimpleNameEndingWith("Controller")
-          .as("Rule 9: @RestController classes must end with Controller");
+          .as("Rule 9: @RestController付きクラス名はControllerで終わること");
 
   @ArchTest
-  static final ArchRule rule10_application_service_interfaces_must_have_expected_suffix =
+  static final ArchRule applicationServiceインターフェース名はApplicationServiceで終わること =
       classes()
           .that()
           .resideInAPackage("..application.service..")
@@ -44,10 +44,10 @@ class NamingAndAnnotationArchitectureTest {
           .areInterfaces()
           .should()
           .haveSimpleNameEndingWith("ApplicationService")
-          .as("Rule 10: application service interfaces must end with ApplicationService");
+          .as("Rule 10: application.serviceパッケージのインターフェース名はApplicationServiceで終わること");
 
   @ArchTest
-  static final ArchRule rule11_application_service_implementations_must_have_expected_suffix =
+  static final ArchRule applicationService実装クラス名はApplicationServiceImplで終わること =
       classes()
           .that()
           .resideInAPackage("..application.service..")
@@ -55,29 +55,28 @@ class NamingAndAnnotationArchitectureTest {
           .areAnnotatedWith(Service.class)
           .should()
           .haveSimpleNameEndingWith("ApplicationServiceImpl")
-          .as(
-              "Rule 11: @Service classes in application.service must end with ApplicationServiceImpl");
+          .as("Rule 11: application.serviceパッケージの@Serviceクラス名はApplicationServiceImplで終わること");
 
   @ArchTest
-  static final ArchRule rule12_commands_must_have_command_suffix =
+  static final ArchRule applicationのcommandクラス名はCommandで終わること =
       classes()
           .that()
           .resideInAPackage("..application.command..")
           .should()
           .haveSimpleNameEndingWith("Command")
-          .as("Rule 12: application command classes must end with Command");
+          .as("Rule 12: application.commandパッケージのクラス名はCommandで終わること");
 
   @ArchTest
-  static final ArchRule rule13_dtos_must_have_dto_suffix =
+  static final ArchRule applicationのdtoクラス名はDtoで終わること =
       classes()
           .that()
           .resideInAPackage("..application.dto..")
           .should()
           .haveSimpleNameEndingWith("Dto")
-          .as("Rule 13: application DTO classes must end with Dto");
+          .as("Rule 13: application.dtoパッケージのクラス名はDtoで終わること");
 
   @ArchTest
-  static final ArchRule rule14_domain_repository_interfaces_must_have_repository_suffix =
+  static final ArchRule domainRepositoryインターフェース名はRepositoryで終わること =
       classes()
           .that()
           .resideInAPackage("..domain.repository..")
@@ -85,10 +84,10 @@ class NamingAndAnnotationArchitectureTest {
           .areInterfaces()
           .should()
           .haveSimpleNameEndingWith("Repository")
-          .as("Rule 14: domain repository interfaces must end with Repository");
+          .as("Rule 14: domain.repositoryパッケージのインターフェース名はRepositoryで終わること");
 
   @ArchTest
-  static final ArchRule rule15_repository_implementations_must_have_expected_suffix =
+  static final ArchRule infrastructureRepository実装クラス名はRepositoryImplで終わること =
       classes()
           .that()
           .resideInAPackage("..infrastructure.repository..")
@@ -96,29 +95,28 @@ class NamingAndAnnotationArchitectureTest {
           .areAnnotatedWith(Repository.class)
           .should()
           .haveSimpleNameEndingWith("RepositoryImpl")
-          .as(
-              "Rule 15: @Repository classes in infrastructure.repository must end with RepositoryImpl");
+          .as("Rule 15: infrastructure.repositoryパッケージの@Repositoryクラス名はRepositoryImplで終わること");
 
   @ArchTest
-  static final ArchRule rule16_rest_controllers_must_have_request_mapping =
+  static final ArchRule restControllerクラスにはRequestMappingが付与されていること =
       classes()
           .that()
           .areAnnotatedWith(RestController.class)
           .should()
           .beAnnotatedWith(RequestMapping.class)
-          .as("Rule 16: @RestController classes must have @RequestMapping");
+          .as("Rule 16: @RestController付きクラスには@RequestMappingが付与されていること");
 
   @ArchTest
-  static final ArchRule rule17_rest_controllers_must_have_swagger_tag =
+  static final ArchRule restControllerクラスにはSwaggerのTagが付与されていること =
       classes()
           .that()
           .areAnnotatedWith(RestController.class)
           .should()
           .beAnnotatedWith(Tag.class)
-          .as("Rule 17: @RestController classes must have Swagger @Tag");
+          .as("Rule 17: @RestController付きクラスにはSwaggerの@Tagが付与されていること");
 
   @ArchTest
-  static final ArchRule rule18_repository_implementations_must_have_repository_annotation =
+  static final ArchRule infrastructureRepository実装クラスにはRepositoryが付与されていること =
       classes()
           .that()
           .resideInAPackage("..infrastructure.repository..")
@@ -126,10 +124,10 @@ class NamingAndAnnotationArchitectureTest {
           .areNotInterfaces()
           .should()
           .beAnnotatedWith(Repository.class)
-          .as("Rule 18: implementation classes in infrastructure.repository must have @Repository");
+          .as("Rule 18: infrastructure.repositoryパッケージの実装クラスには@Repositoryが付与されていること");
 
   @ArchTest
-  static final ArchRule rule19_domain_service_interfaces_must_have_expected_suffix =
+  static final ArchRule domainServiceインターフェース名はDomainServiceで終わること =
       classes()
           .that()
           .resideInAPackage("..domain.service..")
@@ -137,10 +135,10 @@ class NamingAndAnnotationArchitectureTest {
           .areInterfaces()
           .should()
           .haveSimpleNameEndingWith("DomainService")
-          .as("Rule 19: domain service interfaces must end with DomainService");
+          .as("Rule 19: domain.serviceパッケージのインターフェース名はDomainServiceで終わること");
 
   @ArchTest
-  static final ArchRule rule20_domain_service_implementations_must_have_expected_suffix =
+  static final ArchRule domainService実装クラス名はDomainServiceImplで終わること =
       classes()
           .that()
           .resideInAPackage("..domain.service..")
@@ -148,5 +146,23 @@ class NamingAndAnnotationArchitectureTest {
           .areNotInterfaces()
           .should()
           .haveSimpleNameEndingWith("DomainServiceImpl")
-          .as("Rule 20: implementation classes in domain.service must end with DomainServiceImpl");
+          .as("Rule 20: domain.serviceパッケージの実装クラス名はDomainServiceImplで終わること");
+
+  @ArchTest
+  static final ArchRule infrastructureのentityクラス名はEntityで終わること =
+      classes()
+          .that()
+          .resideInAPackage("..infrastructure.entity..")
+          .should()
+          .haveSimpleNameEndingWith("Entity")
+          .as("Rule 21: infrastructure.entityパッケージのクラス名はEntityで終わること");
+
+  @ArchTest
+  static final ArchRule infrastructureのrowクラス名はRowで終わること =
+      classes()
+          .that()
+          .resideInAPackage("..infrastructure.row..")
+          .should()
+          .haveSimpleNameEndingWith("Row")
+          .as("Rule 22: infrastructure.rowパッケージのクラス名はRowで終わること");
 }

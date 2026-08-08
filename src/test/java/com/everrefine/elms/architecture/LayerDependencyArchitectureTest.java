@@ -18,72 +18,72 @@ class LayerDependencyArchitectureTest {
   private static final String INFRASTRUCTURE = "..infrastructure..";
 
   @ArchTest
-  static final ArchRule rule01_presentation_must_not_depend_on_infrastructure =
+  static final ArchRule presentation層はinfrastructure層に依存しないこと =
       noClasses()
           .that()
           .resideInAPackage(PRESENTATION)
           .should()
           .dependOnClassesThat()
           .resideInAPackage(INFRASTRUCTURE)
-          .as("Rule 1: presentation must not depend on infrastructure");
+          .as("Rule 1: presentation層はinfrastructure層に依存しないこと");
 
   @ArchTest
-  static final ArchRule rule02_application_must_not_depend_on_infrastructure =
+  static final ArchRule application層はinfrastructure層に依存しないこと =
       noClasses()
           .that()
           .resideInAPackage(APPLICATION)
           .should()
           .dependOnClassesThat()
           .resideInAPackage(INFRASTRUCTURE)
-          .as("Rule 2: application must not depend on infrastructure");
+          .as("Rule 2: application層はinfrastructure層に依存しないこと");
 
   @ArchTest
-  static final ArchRule rule03_application_must_not_depend_on_presentation =
+  static final ArchRule application層はpresentation層に依存しないこと =
       noClasses()
           .that()
           .resideInAPackage(APPLICATION)
           .should()
           .dependOnClassesThat()
           .resideInAPackage(PRESENTATION)
-          .as("Rule 3: application must not depend on presentation");
+          .as("Rule 3: application層はpresentation層に依存しないこと");
 
   @ArchTest
-  static final ArchRule rule04_domain_must_not_depend_on_application =
+  static final ArchRule domain層はapplication層に依存しないこと =
       noClasses()
           .that()
           .resideInAPackage(DOMAIN)
           .should()
           .dependOnClassesThat()
           .resideInAPackage(APPLICATION)
-          .as("Rule 4: domain must not depend on application");
+          .as("Rule 4: domain層はapplication層に依存しないこと");
 
   @ArchTest
-  static final ArchRule rule05_domain_must_not_depend_on_infrastructure =
+  static final ArchRule domain層はinfrastructure層に依存しないこと =
       noClasses()
           .that()
           .resideInAPackage(DOMAIN)
           .should()
           .dependOnClassesThat()
           .resideInAPackage(INFRASTRUCTURE)
-          .as("Rule 5: domain must not depend on infrastructure");
+          .as("Rule 5: domain層はinfrastructure層に依存しないこと");
 
   @ArchTest
-  static final ArchRule rule06_domain_must_not_depend_on_presentation =
+  static final ArchRule domain層はpresentation層に依存しないこと =
       noClasses()
           .that()
           .resideInAPackage(DOMAIN)
           .should()
           .dependOnClassesThat()
           .resideInAPackage(PRESENTATION)
-          .as("Rule 6: domain must not depend on presentation");
+          .as("Rule 6: domain層はpresentation層に依存しないこと");
 
   @ArchTest
-  static final ArchRule rule07_infrastructure_must_not_depend_on_presentation =
+  static final ArchRule infrastructure層はpresentation層に依存しないこと =
       noClasses()
           .that()
           .resideInAPackage(INFRASTRUCTURE)
           .should()
           .dependOnClassesThat()
           .resideInAPackage(PRESENTATION)
-          .as("Rule 7: infrastructure must not depend on presentation");
+          .as("Rule 7: infrastructure層はpresentation層に依存しないこと");
 }
