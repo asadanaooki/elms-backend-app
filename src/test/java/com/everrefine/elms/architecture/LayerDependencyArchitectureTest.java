@@ -2,10 +2,10 @@ package com.everrefine.elms.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
-import com.tngtech.archunit.lang.ArchRule;
 
 @AnalyzeClasses(
     packages = "com.everrefine.elms",
@@ -18,72 +18,86 @@ class LayerDependencyArchitectureTest {
   private static final String INFRASTRUCTURE = "..infrastructure..";
 
   @ArchTest
-  static final ArchRule presentation層はinfrastructure層に依存しないこと =
-      noClasses()
-          .that()
-          .resideInAPackage(PRESENTATION)
-          .should()
-          .dependOnClassesThat()
-          .resideInAPackage(INFRASTRUCTURE)
-          .as("Rule 1: presentation層はinfrastructure層に依存しないこと");
+  static void presentation層がinfrastructure層に依存していないこと(JavaClasses classes) {
+    noClasses()
+        .that()
+        .resideInAPackage(PRESENTATION)
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage(INFRASTRUCTURE)
+        .as("presentation層がinfrastructure層に依存していないこと")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule application層はinfrastructure層に依存しないこと =
-      noClasses()
-          .that()
-          .resideInAPackage(APPLICATION)
-          .should()
-          .dependOnClassesThat()
-          .resideInAPackage(INFRASTRUCTURE)
-          .as("Rule 2: application層はinfrastructure層に依存しないこと");
+  static void application層がinfrastructure層に依存していないこと(JavaClasses classes) {
+    noClasses()
+        .that()
+        .resideInAPackage(APPLICATION)
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage(INFRASTRUCTURE)
+        .as("application層がinfrastructure層に依存していないこと")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule application層はpresentation層に依存しないこと =
-      noClasses()
-          .that()
-          .resideInAPackage(APPLICATION)
-          .should()
-          .dependOnClassesThat()
-          .resideInAPackage(PRESENTATION)
-          .as("Rule 3: application層はpresentation層に依存しないこと");
+  static void application層がpresentation層に依存していないこと(JavaClasses classes) {
+    noClasses()
+        .that()
+        .resideInAPackage(APPLICATION)
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage(PRESENTATION)
+        .as("application層がpresentation層に依存していないこと")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule domain層はapplication層に依存しないこと =
-      noClasses()
-          .that()
-          .resideInAPackage(DOMAIN)
-          .should()
-          .dependOnClassesThat()
-          .resideInAPackage(APPLICATION)
-          .as("Rule 4: domain層はapplication層に依存しないこと");
+  static void domain層がapplication層に依存していないこと(JavaClasses classes) {
+    noClasses()
+        .that()
+        .resideInAPackage(DOMAIN)
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage(APPLICATION)
+        .as("domain層がapplication層に依存していないこと")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule domain層はinfrastructure層に依存しないこと =
-      noClasses()
-          .that()
-          .resideInAPackage(DOMAIN)
-          .should()
-          .dependOnClassesThat()
-          .resideInAPackage(INFRASTRUCTURE)
-          .as("Rule 5: domain層はinfrastructure層に依存しないこと");
+  static void domain層がinfrastructure層に依存していないこと(JavaClasses classes) {
+    noClasses()
+        .that()
+        .resideInAPackage(DOMAIN)
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage(INFRASTRUCTURE)
+        .as("domain層がinfrastructure層に依存していないこと")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule domain層はpresentation層に依存しないこと =
-      noClasses()
-          .that()
-          .resideInAPackage(DOMAIN)
-          .should()
-          .dependOnClassesThat()
-          .resideInAPackage(PRESENTATION)
-          .as("Rule 6: domain層はpresentation層に依存しないこと");
+  static void domain層がpresentation層に依存していないこと(JavaClasses classes) {
+    noClasses()
+        .that()
+        .resideInAPackage(DOMAIN)
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage(PRESENTATION)
+        .as("domain層がpresentation層に依存していないこと")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule infrastructure層はpresentation層に依存しないこと =
-      noClasses()
-          .that()
-          .resideInAPackage(INFRASTRUCTURE)
-          .should()
-          .dependOnClassesThat()
-          .resideInAPackage(PRESENTATION)
-          .as("Rule 7: infrastructure層はpresentation層に依存しないこと");
+  static void infrastructure層がpresentation層に依存していないこと(JavaClasses classes) {
+    noClasses()
+        .that()
+        .resideInAPackage(INFRASTRUCTURE)
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage(PRESENTATION)
+        .as("infrastructure層がpresentation層に依存していないこと")
+        .check(classes);
+  }
 }

@@ -2,10 +2,10 @@ package com.everrefine.elms.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
-import com.tngtech.archunit.lang.ArchRule;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
@@ -18,151 +18,181 @@ import org.springframework.web.bind.annotation.RestController;
 class NamingAndAnnotationArchitectureTest {
 
   @ArchTest
-  static final ArchRule presentationのrequestクラス名はRequestで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..presentation.request..")
-          .should()
-          .haveSimpleNameEndingWith("Request")
-          .as("Rule 8: presentation.requestパッケージのクラス名はRequestで終わること");
+  static void presentationのrequestクラス名がRequestで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..presentation.request..")
+        .should()
+        .haveSimpleNameEndingWith("Request")
+        .as("presentation.requestパッケージのクラス名がRequestで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule restControllerクラス名はControllerで終わること =
-      classes()
-          .that()
-          .areAnnotatedWith(RestController.class)
-          .should()
-          .haveSimpleNameEndingWith("Controller")
-          .as("Rule 9: @RestController付きクラス名はControllerで終わること");
+  static void restControllerクラス名がControllerで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .areAnnotatedWith(RestController.class)
+        .should()
+        .haveSimpleNameEndingWith("Controller")
+        .as("@RestController付きクラス名がControllerで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule applicationServiceインターフェース名はApplicationServiceで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..application.service..")
-          .and()
-          .areInterfaces()
-          .should()
-          .haveSimpleNameEndingWith("ApplicationService")
-          .as("Rule 10: application.serviceパッケージのインターフェース名はApplicationServiceで終わること");
+  static void applicationServiceインターフェース名がApplicationServiceで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..application.service..")
+        .and()
+        .areInterfaces()
+        .should()
+        .haveSimpleNameEndingWith("ApplicationService")
+        .as("application.serviceパッケージのインターフェース名がApplicationServiceで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule applicationService実装クラス名はApplicationServiceImplで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..application.service..")
-          .and()
-          .areAnnotatedWith(Service.class)
-          .should()
-          .haveSimpleNameEndingWith("ApplicationServiceImpl")
-          .as("Rule 11: application.serviceパッケージの@Serviceクラス名はApplicationServiceImplで終わること");
+  static void applicationService実装クラス名がApplicationServiceImplで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..application.service..")
+        .and()
+        .areAnnotatedWith(Service.class)
+        .should()
+        .haveSimpleNameEndingWith("ApplicationServiceImpl")
+        .as("application.serviceパッケージの@Serviceクラス名がApplicationServiceImplで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule applicationのcommandクラス名はCommandで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..application.command..")
-          .should()
-          .haveSimpleNameEndingWith("Command")
-          .as("Rule 12: application.commandパッケージのクラス名はCommandで終わること");
+  static void applicationのcommandクラス名がCommandで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..application.command..")
+        .should()
+        .haveSimpleNameEndingWith("Command")
+        .as("application.commandパッケージのクラス名がCommandで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule applicationのdtoクラス名はDtoで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..application.dto..")
-          .should()
-          .haveSimpleNameEndingWith("Dto")
-          .as("Rule 13: application.dtoパッケージのクラス名はDtoで終わること");
+  static void applicationのdtoクラス名がDtoで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..application.dto..")
+        .should()
+        .haveSimpleNameEndingWith("Dto")
+        .as("application.dtoパッケージのクラス名がDtoで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule domainRepositoryインターフェース名はRepositoryで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..domain.repository..")
-          .and()
-          .areInterfaces()
-          .should()
-          .haveSimpleNameEndingWith("Repository")
-          .as("Rule 14: domain.repositoryパッケージのインターフェース名はRepositoryで終わること");
+  static void domainRepositoryインターフェース名がRepositoryで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..domain.repository..")
+        .and()
+        .areInterfaces()
+        .should()
+        .haveSimpleNameEndingWith("Repository")
+        .as("domain.repositoryパッケージのインターフェース名がRepositoryで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule infrastructureRepository実装クラス名はRepositoryImplで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..infrastructure.repository..")
-          .and()
-          .areAnnotatedWith(Repository.class)
-          .should()
-          .haveSimpleNameEndingWith("RepositoryImpl")
-          .as("Rule 15: infrastructure.repositoryパッケージの@Repositoryクラス名はRepositoryImplで終わること");
+  static void infrastructureRepository実装クラス名がRepositoryImplで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..infrastructure.repository..")
+        .and()
+        .areAnnotatedWith(Repository.class)
+        .should()
+        .haveSimpleNameEndingWith("RepositoryImpl")
+        .as("infrastructure.repositoryパッケージの@Repositoryクラス名がRepositoryImplで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule restControllerクラスにはRequestMappingが付与されていること =
-      classes()
-          .that()
-          .areAnnotatedWith(RestController.class)
-          .should()
-          .beAnnotatedWith(RequestMapping.class)
-          .as("Rule 16: @RestController付きクラスには@RequestMappingが付与されていること");
+  static void restControllerクラスにRequestMappingが付与されていること(JavaClasses classes) {
+    classes()
+        .that()
+        .areAnnotatedWith(RestController.class)
+        .should()
+        .beAnnotatedWith(RequestMapping.class)
+        .as("@RestController付きクラスに@RequestMappingが付与されていること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule restControllerクラスにはSwaggerのTagが付与されていること =
-      classes()
-          .that()
-          .areAnnotatedWith(RestController.class)
-          .should()
-          .beAnnotatedWith(Tag.class)
-          .as("Rule 17: @RestController付きクラスにはSwaggerの@Tagが付与されていること");
+  static void restControllerクラスにSwaggerのTagが付与されていること(JavaClasses classes) {
+    classes()
+        .that()
+        .areAnnotatedWith(RestController.class)
+        .should()
+        .beAnnotatedWith(Tag.class)
+        .as("@RestController付きクラスにSwaggerの@Tagが付与されていること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule infrastructureRepository実装クラスにはRepositoryが付与されていること =
-      classes()
-          .that()
-          .resideInAPackage("..infrastructure.repository..")
-          .and()
-          .areNotInterfaces()
-          .should()
-          .beAnnotatedWith(Repository.class)
-          .as("Rule 18: infrastructure.repositoryパッケージの実装クラスには@Repositoryが付与されていること");
+  static void infrastructureRepository実装クラスにRepositoryが付与されていること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..infrastructure.repository..")
+        .and()
+        .areNotInterfaces()
+        .should()
+        .beAnnotatedWith(Repository.class)
+        .as("infrastructure.repositoryパッケージの実装クラスに@Repositoryが付与されていること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule domainServiceインターフェース名はDomainServiceで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..domain.service..")
-          .and()
-          .areInterfaces()
-          .should()
-          .haveSimpleNameEndingWith("DomainService")
-          .as("Rule 19: domain.serviceパッケージのインターフェース名はDomainServiceで終わること");
+  static void domainServiceインターフェース名がDomainServiceで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..domain.service..")
+        .and()
+        .areInterfaces()
+        .should()
+        .haveSimpleNameEndingWith("DomainService")
+        .as("domain.serviceパッケージのインターフェース名がDomainServiceで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule domainService実装クラス名はDomainServiceImplで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..domain.service..")
-          .and()
-          .areNotInterfaces()
-          .should()
-          .haveSimpleNameEndingWith("DomainServiceImpl")
-          .as("Rule 20: domain.serviceパッケージの実装クラス名はDomainServiceImplで終わること");
+  static void domainService実装クラス名がDomainServiceImplで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..domain.service..")
+        .and()
+        .areNotInterfaces()
+        .should()
+        .haveSimpleNameEndingWith("DomainServiceImpl")
+        .as("domain.serviceパッケージの実装クラス名がDomainServiceImplで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule infrastructureのentityクラス名はEntityで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..infrastructure.entity..")
-          .should()
-          .haveSimpleNameEndingWith("Entity")
-          .as("Rule 21: infrastructure.entityパッケージのクラス名はEntityで終わること");
+  static void infrastructureのentityクラス名がEntityで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..infrastructure.entity..")
+        .should()
+        .haveSimpleNameEndingWith("Entity")
+        .as("infrastructure.entityパッケージのクラス名がEntityで終わること")
+        .check(classes);
+  }
 
   @ArchTest
-  static final ArchRule infrastructureのrowクラス名はRowで終わること =
-      classes()
-          .that()
-          .resideInAPackage("..infrastructure.row..")
-          .should()
-          .haveSimpleNameEndingWith("Row")
-          .as("Rule 22: infrastructure.rowパッケージのクラス名はRowで終わること");
+  static void infrastructureのrowクラス名がRowで終わること(JavaClasses classes) {
+    classes()
+        .that()
+        .resideInAPackage("..infrastructure.row..")
+        .should()
+        .haveSimpleNameEndingWith("Row")
+        .as("infrastructure.rowパッケージのクラス名がRowで終わること")
+        .check(classes);
+  }
 }
