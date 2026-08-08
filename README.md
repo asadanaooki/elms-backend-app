@@ -196,7 +196,7 @@ flowchart TB
 | 6 | domain 層は presentation 層にアクセスしてはならない |
 | 7 | infrastructure 層は presentation 層にアクセスしてはならない |
 
-#### 命名・構成ルール（Rule 8〜20）
+#### 命名・構成ルール（Rule 8〜22）
 
 | Rule | 内容 |
 |---|---|
@@ -213,6 +213,8 @@ flowchart TB
 | 18 | `infrastructure.repository` のクラス（インターフェース以外）は `@Repository` を持つこと |
 | 19 | `domain.service` の **インターフェース** は `DomainService` で終わること |
 | 20 | `domain.service` のクラス（インターフェース以外）は `DomainServiceImpl` で終わること |
+| 21 | `infrastructure.entity` パッケージのクラスは `Entity` で終わること |
+| 22 | `infrastructure.row` パッケージのクラスは `Row` で終わること |
 
 ### ドメイン駆動設計（DDD）の指針
 
