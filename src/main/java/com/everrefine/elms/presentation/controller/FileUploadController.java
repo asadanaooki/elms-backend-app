@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,6 +29,7 @@ public class FileUploadController {
    *
    * @param file アップロード対象の画像ファイル
    * @return 保存先パス
+   * @throws IOException ファイルの読み込みに失敗した場合
    */
   @Operation(summary = "ファイルアップロード", description = "画像ファイルをアップロードし、保存先パスを返します")
   @ApiResponses({
@@ -38,12 +40,9 @@ public class FileUploadController {
   })
   @PreAuthorize("hasAuthority('ADMIN')")
   @PostMapping("/upload")
-  public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file) {
-    try {
-      String filePath = fileStorageApplicationService.saveImage(file);
-      return ResponseEntity.ok(filePath); // 保存先のパスを返す
-    } catch (Exception e) {
-      return ResponseEntity.badRequest().body("ファイルアップロード失敗: " + e.getMessage());
-    }
+  public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file)
+      throws IOException {
+    String filePath = fileStorageApplicationService.saveImage(file);
+    return ResponseEntity.ok(filePath); // 保存先のパスを返す
   }
 }

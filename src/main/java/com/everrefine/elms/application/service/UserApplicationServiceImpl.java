@@ -33,11 +33,9 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 /** ユーザーアプリケーションサービスの実装。 */
 @Service
@@ -258,7 +256,7 @@ public class UserApplicationServiceImpl implements UserApplicationService {
     User user = userDomainService.getLoginUser();
 
     if (!user.isCurrentPasswordMatch(passwordUpdateCommand.currentPassword())) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+      throw new BadRequestException("パスワードが一致しません");
     }
 
     userRepository.updateUser(
@@ -312,7 +310,7 @@ public class UserApplicationServiceImpl implements UserApplicationService {
         userImportCommand.rows().stream()
             .anyMatch(row -> row.hasEmailAddress(currentUser.emailAddress()));
     if (!currentUserExists) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "現在ログイン中のユーザーがCSVに含まれていません");
+      throw new BadRequestException("現在ログイン中のユーザーがCSVに含まれていません");
     }
   }
 
@@ -323,7 +321,7 @@ public class UserApplicationServiceImpl implements UserApplicationService {
    */
   private void throwExceptionIfAdminNotIncluded(UserImportCommand userImportCommand) {
     if (!userImportCommand.containsAdmin()) {
-      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "管理者ユーザーを1人以上含めてください");
+      throw new BadRequestException("管理者ユーザーを1人以上含めてください");
     }
   }
 }

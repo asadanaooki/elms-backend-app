@@ -2,6 +2,7 @@ package com.everrefine.elms.presentation.exception;
 
 import com.everrefine.elms.application.exception.BadRequestException;
 import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.EntityNotFoundException;
 import com.everrefine.elms.domain.exception.InvalidValueException;
 import com.everrefine.elms.presentation.response.ErrorResponse;
 import java.util.Map;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -20,7 +22,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -41,6 +42,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   private static final Map<HttpStatus, String> MESSAGES =
       Map.of(
           HttpStatus.BAD_REQUEST, "リクエストの形式が不正です",
+          HttpStatus.UNAUTHORIZED, "認証が必要です",
           HttpStatus.NOT_FOUND, "リソースが見つかりません",
           HttpStatus.METHOD_NOT_ALLOWED, "このHTTPメソッドはサポートされていません",
           HttpStatus.NOT_ACCEPTABLE, "サポートされていないレスポンス形式が要求されました",
@@ -152,26 +154,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    * @param e リソース未検出例外
    * @return エラーレスポンス
    */
-  @ExceptionHandler(ResourceNotFoundException.class)
+  @ExceptionHandler({ResourceNotFoundException.class, EntityNotFoundException.class})
   @ResponseStatus(HttpStatus.NOT_FOUND)
-  public ErrorResponse handleNotFound(ResourceNotFoundException e) {
+  public ErrorResponse handleNotFound(RuntimeException e) {
     return new ErrorResponse("RESOURCE_NOT_FOUND", e.getMessage());
-  }
-
-  // ⑥ ステータス指定付きの例外 → 指定されたステータス
-  /**
-   * {@link ResponseStatusException} を、指定されたステータスのまま返す。
-   *
-   * <p>catch-allより先に {@code @ExceptionHandler} が解決されるため、このハンドラがないと 400/401 を意図した例外がすべて500になってしまう。
-   *
-   * @param e ステータス指定付き例外
-   * @return エラーレスポンス
-   */
-  @ExceptionHandler(ResponseStatusException.class)
-  public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException e) {
-    HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
-    String message = e.getReason() != null ? e.getReason() : toErrorResponse(status).message();
-    return ResponseEntity.status(status).body(new ErrorResponse(status.name(), message));
   }
 
   // ⑦ 権限不足 → 403
@@ -188,6 +174,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   @ResponseStatus(HttpStatus.FORBIDDEN)
   public ErrorResponse handleAccessDenied(AccessDeniedException e) {
     return new ErrorResponse("FORBIDDEN", "この操作を行う権限がありません");
+  }
+
+  // ⑦ 認証情報なし → 401
+  /**
+   * 認証情報を取得できない場合を処理する。
+   *
+   * @param e 認証情報未検出例外
+   * @return エラーレスポンス
+   */
+  @ExceptionHandler(AuthenticationException.class)
+  @ResponseStatus(HttpStatus.UNAUTHORIZED)
+  public ErrorResponse handleUnauthorized(AuthenticationException e) {
+    return new ErrorResponse("UNAUTHORIZED", "認証に失敗しました");
   }
 
   // ⑧ DBデータ不整合（値オブジェクト生成失敗） → 500
