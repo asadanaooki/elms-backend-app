@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.everrefine.elms.application.dto.CourseDto;
 import com.everrefine.elms.application.dto.CoursePageDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.presentation.request.CourseCreateRequest;
 import com.everrefine.elms.presentation.request.CourseUpdateRequest;
 import com.everrefine.elms.testsupport.TestDataFactory;

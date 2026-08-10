@@ -3,7 +3,7 @@ package com.everrefine.elms.application.service;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.everrefine.elms.application.dto.UserCourseDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.testsupport.TestDataFactory;
 import java.math.BigDecimal;
 import java.util.List;

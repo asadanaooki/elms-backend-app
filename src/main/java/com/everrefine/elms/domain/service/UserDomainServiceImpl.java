@@ -1,6 +1,6 @@
 package com.everrefine.elms.domain.service;
 
-import com.everrefine.elms.domain.exception.EntityNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.user.User;
 import com.everrefine.elms.domain.repository.UserRepository;
 import java.util.UUID;
@@ -33,6 +33,6 @@ public class UserDomainServiceImpl implements UserDomainService {
     UUID userId = UUID.fromString(userDetails.getUsername());
     return userRepository
         .findUserById(userId)
-        .orElseThrow(() -> new EntityNotFoundException(User.class, String.valueOf(userId)));
+        .orElseThrow(() -> new ResourceNotFoundException(User.class, String.valueOf(userId)));
   }
 }

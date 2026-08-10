@@ -4,7 +4,7 @@ import com.everrefine.elms.application.command.LessonGroupCreateCommand;
 import com.everrefine.elms.application.command.LessonGroupUpdateCommand;
 import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.LessonGroupDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.course.Course;
 import com.everrefine.elms.domain.model.lesson.LessonGroup;
 import com.everrefine.elms.domain.repository.CourseRepository;

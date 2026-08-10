@@ -3,7 +3,7 @@ package com.everrefine.elms.application.service;
 import com.everrefine.elms.application.command.UserLessonCompletionStatusUpdateCommand;
 import com.everrefine.elms.application.dto.UserLessonDetailDto;
 import com.everrefine.elms.application.dto.UserLessonGroupDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.UserLesson;
 import com.everrefine.elms.domain.model.course.Course;
 import com.everrefine.elms.domain.model.lesson.Lesson;

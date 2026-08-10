@@ -1,4 +1,4 @@
-package com.everrefine.elms.application.exception;
+package com.everrefine.elms.domain.exception;
 
 /** リソースが見つからない場合にスローされる例外。 */
 public class ResourceNotFoundException extends RuntimeException {

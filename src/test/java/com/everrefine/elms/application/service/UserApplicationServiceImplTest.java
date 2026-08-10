@@ -7,13 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.everrefine.elms.application.command.LoginHistoryCreateCommand;
 import com.everrefine.elms.application.command.PasswordUpdateCommand;
 import com.everrefine.elms.application.command.UserImportCommand;
 import com.everrefine.elms.application.command.UserSearchCommand;
 import com.everrefine.elms.application.dto.UserImportResponseDto;
 import com.everrefine.elms.application.dto.UserPageDto;
 import com.everrefine.elms.application.exception.BadRequestException;
-import com.everrefine.elms.domain.exception.EntityNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.user.User;
 import com.everrefine.elms.domain.repository.UserRepository;
 import com.everrefine.elms.presentation.request.PasswordUpdateRequest;
@@ -216,7 +217,7 @@ class UserApplicationServiceImplTest {
     }
 
     @Test
-    void ユーザーが存在しないときEntityNotFoundExceptionが投げられること() {
+    void ユーザーが存在しないときResourceNotFoundExceptionが投げられること() {
       // Arrange - DBに存在しないユーザーIDで認証済みの状態にする
       createAuthentication(UUID.randomUUID(), "currentPass");
       PasswordUpdateRequest request = new PasswordUpdateRequest("currentPass", "newPass");
@@ -224,7 +225,7 @@ class UserApplicationServiceImplTest {
 
       // Act & Assert
       assertThrows(
-          EntityNotFoundException.class,
+          ResourceNotFoundException.class,
           () -> userApplicationService.updatePassword(passwordUpdateCommand));
     }
 
@@ -247,6 +248,19 @@ class UserApplicationServiceImplTest {
               BadRequestException.class,
               () -> userApplicationService.updatePassword(passwordUpdateCommand));
       assertEquals("パスワードが一致しません", ex.getMessage());
+    }
+  }
+
+  @Nested
+  class ログイン履歴更新 {
+
+    @Test
+    void ユーザーが存在しないときResourceNotFoundExceptionが投げられること() {
+      LoginHistoryCreateCommand command = new LoginHistoryCreateCommand("missing@example.com");
+
+      assertThrows(
+          ResourceNotFoundException.class,
+          () -> userApplicationService.updateUserLoginHistory(command));
     }
   }
 

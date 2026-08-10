@@ -4,12 +4,14 @@ import com.everrefine.elms.application.exception.BadRequestException;
 import com.everrefine.elms.application.util.CsvImportUtils;
 import com.everrefine.elms.domain.model.Order;
 import com.everrefine.elms.domain.model.lesson.VideoUrl;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.web.multipart.MultipartFile;
 
 /** CSV取込用レッスンのコマンド。CSV全体のレッスン情報を保持する。 */
 public record LessonImportCommand(UUID courseId, List<LessonImportRowCommand> rows) {
@@ -43,9 +45,15 @@ public record LessonImportCommand(UUID courseId, List<LessonImportRowCommand> ro
    * @param fileContent アップロードファイル内容
    * @return 取込用Command
    */
-  public static LessonImportCommand from(UUID courseId, String filename, byte[] fileContent) {
-    throwExceptionIfCsvFileInvalid(filename, fileContent);
-    List<LessonImportRowCommand> rows = readRows(fileContent);
+  public static LessonImportCommand from(UUID courseId, MultipartFile file) {
+    List<LessonImportRowCommand> rows = new ArrayList<LessonImportRowCommand>();
+    try {
+      throwExceptionIfCsvFileInvalid(file.getOriginalFilename(), file.getBytes());
+      rows = readRows(file.getBytes());
+    } catch (IOException e) {
+      throw new BadRequestException("CSVファイルの読み込みに失敗しました", e);
+    }
+
     if (rows.isEmpty()) {
       throw new BadRequestException("取り込み対象のレッスンがありません");
     }

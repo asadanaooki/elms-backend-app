@@ -1,9 +1,8 @@
 package com.everrefine.elms.presentation.exception;
 
 import com.everrefine.elms.application.exception.BadRequestException;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
-import com.everrefine.elms.domain.exception.EntityNotFoundException;
 import com.everrefine.elms.domain.exception.InvalidValueException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.presentation.response.ErrorResponse;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -154,9 +153,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
    * @param e リソース未検出例外
    * @return エラーレスポンス
    */
-  @ExceptionHandler({ResourceNotFoundException.class, EntityNotFoundException.class})
+  @ExceptionHandler(ResourceNotFoundException.class)
   @ResponseStatus(HttpStatus.NOT_FOUND)
-  public ErrorResponse handleNotFound(RuntimeException e) {
+  public ErrorResponse handleNotFound(ResourceNotFoundException e) {
     return new ErrorResponse("RESOURCE_NOT_FOUND", e.getMessage());
   }
 

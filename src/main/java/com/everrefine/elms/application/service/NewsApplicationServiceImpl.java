@@ -5,7 +5,7 @@ import com.everrefine.elms.application.command.NewsSearchCommand;
 import com.everrefine.elms.application.command.NewsUpdateCommand;
 import com.everrefine.elms.application.dto.NewsDto;
 import com.everrefine.elms.application.dto.NewsPageDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.news.News;
 import com.everrefine.elms.domain.repository.NewsRepository;
 import java.util.List;

@@ -10,7 +10,7 @@ import com.everrefine.elms.application.dto.UserDto;
 import com.everrefine.elms.application.dto.UserImportResponseDto;
 import com.everrefine.elms.application.dto.UserPageDto;
 import com.everrefine.elms.application.exception.BadRequestException;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.user.EmailAddress;
 import com.everrefine.elms.domain.model.user.ProgressRate;
 import com.everrefine.elms.domain.model.user.User;
@@ -33,7 +33,6 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -162,7 +161,8 @@ public class UserApplicationServiceImpl implements UserApplicationService {
     User user =
         userRepository
             .findUserByEmailAddress(new EmailAddress(loginHistoryCreateCommand.email()))
-            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            .orElseThrow(
+                () -> new ResourceNotFoundException(User.class, loginHistoryCreateCommand.email()));
 
     Optional<UserLoginHistory> userLoginHistory =
         userLoginHistoryRepository.findUserLoginHistoryByUserId(user.id());

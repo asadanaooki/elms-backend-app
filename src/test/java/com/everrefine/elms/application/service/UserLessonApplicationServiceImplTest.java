@@ -10,7 +10,7 @@ import com.everrefine.elms.application.command.UserLessonCompletionStatusUpdateC
 import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.application.dto.UserLessonDetailDto;
 import com.everrefine.elms.application.dto.UserLessonGroupDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.UserLesson;
 import com.everrefine.elms.domain.repository.UserLessonRepository;
 import com.everrefine.elms.presentation.request.UserLessonCompletionStatusUpdateRequest;
