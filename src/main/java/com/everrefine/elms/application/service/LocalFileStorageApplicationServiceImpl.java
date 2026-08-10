@@ -1,5 +1,6 @@
 package com.everrefine.elms.application.service;
 
+import com.everrefine.elms.application.exception.BadRequestException;
 import com.everrefine.elms.domain.repository.CourseRepository;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.domain.repository.UserRepository;
@@ -39,7 +40,7 @@ public class LocalFileStorageApplicationServiceImpl implements FileStorageApplic
   @Override
   public String saveImage(MultipartFile file) throws IOException {
     if (file.isEmpty()) {
-      throw new IOException("空のファイルです");
+      throw new BadRequestException("空のファイルです");
     }
 
     Path uploadPath = Paths.get(uploadDirectory);

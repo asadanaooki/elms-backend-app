@@ -16,7 +16,7 @@ import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.LessonImportResponseDto;
 import com.everrefine.elms.application.dto.LessonPageDto;
 import com.everrefine.elms.application.dto.TagDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.presentation.request.LessonCreateRequest;
@@ -349,8 +349,7 @@ public class LessonApplicationServiceImplTest {
 
       // Act
       LessonImportResponseDto result =
-          lessonApplicationService.importLessonsCsv(
-              LessonImportCommand.from(courseId, file.getOriginalFilename(), file.getBytes()));
+          lessonApplicationService.importLessonsCsv(LessonImportCommand.from(courseId, file));
 
       // Assert - 取込件数
       assertEquals(2, result.importedLessonGroupCount());
@@ -451,8 +450,7 @@ public class LessonApplicationServiceImplTest {
       MockMultipartFile file =
           new MockMultipartFile(
               "file", "lessons.csv", "text/csv", csv.getBytes(StandardCharsets.UTF_8));
-      LessonImportCommand command =
-          LessonImportCommand.from(UUID.randomUUID(), file.getOriginalFilename(), file.getBytes());
+      LessonImportCommand command = LessonImportCommand.from(UUID.randomUUID(), file);
 
       // Act & Assert
       assertThrows(

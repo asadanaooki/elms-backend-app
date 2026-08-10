@@ -4,7 +4,7 @@ import com.everrefine.elms.application.command.CourseCreateCommand;
 import com.everrefine.elms.application.command.CourseUpdateCommand;
 import com.everrefine.elms.application.dto.CourseDto;
 import com.everrefine.elms.application.dto.CoursePageDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.PagerForRequest;
 import com.everrefine.elms.domain.model.course.Course;
 import com.everrefine.elms.domain.repository.CourseRepository;

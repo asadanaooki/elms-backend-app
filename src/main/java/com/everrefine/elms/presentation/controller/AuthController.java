@@ -17,7 +17,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -70,37 +69,32 @@ public class AuthController {
   @PostMapping("/login")
   public ResponseEntity<Void> login(
       @RequestBody @Valid LoginRequest loginRequest, HttpServletResponse response) {
-    try {
-      // authenticate()を実行すると以下が実行される。
-      // ・UserDetailsService.loadUserByUsername(email)でユーザーの存在チェック
-      // ・BCryptPasswordEncoder.matches()でパスワード検証
-      Authentication authentication =
-          authenticationManager.authenticate(
-              new UsernamePasswordAuthenticationToken(
-                  loginRequest.emailAddress(), loginRequest.password()));
+    // authenticate()を実行すると以下が実行される。
+    // ・UserDetailsService.loadUserByUsername(email)でユーザーの存在チェック
+    // ・BCryptPasswordEncoder.matches()でパスワード検証
+    Authentication authentication =
+        authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(
+                loginRequest.emailAddress(), loginRequest.password()));
 
-      // ログイン履歴を保存する。
-      LoginHistoryCreateCommand loginHistoryCreateCommand =
-          loginRequest.toLoginHistoryCreateCommand();
-      userApplicationService.updateUserLoginHistory(loginHistoryCreateCommand);
+    // ログイン履歴を保存する。
+    LoginHistoryCreateCommand loginHistoryCreateCommand =
+        loginRequest.toLoginHistoryCreateCommand();
+    userApplicationService.updateUserLoginHistory(loginHistoryCreateCommand);
 
-      // JWTとリフレッシュトークンを生成する。
-      String jwtToken = jwtApplicationService.generateJwtToken(authentication.getName());
-      String refreshToken =
-          jwtApplicationService.generateRefreshToken(
-              authentication.getName(), loginRequest.rememberMe());
+    // JWTとリフレッシュトークンを生成する。
+    String jwtToken = jwtApplicationService.generateJwtToken(authentication.getName());
+    String refreshToken =
+        jwtApplicationService.generateRefreshToken(
+            authentication.getName(), loginRequest.rememberMe());
 
-      // JWTとリフレッシュトークンをクッキーに設定する。
-      jwtApplicationService.setJwtTokenToResponseCookie(response, jwtToken);
-      jwtApplicationService.setRefreshTokenToResponseCookie(
-          response, refreshToken, loginRequest.rememberMe());
+    // JWTとリフレッシュトークンをクッキーに設定する。
+    jwtApplicationService.setJwtTokenToResponseCookie(response, jwtToken);
+    jwtApplicationService.setRefreshTokenToResponseCookie(
+        response, refreshToken, loginRequest.rememberMe());
 
-      // ログイン成功
-      return ResponseEntity.ok().build();
-    } catch (AuthenticationException e) {
-      // 認証失敗
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
+    // ログイン成功
+    return ResponseEntity.ok().build();
   }
 
   /**

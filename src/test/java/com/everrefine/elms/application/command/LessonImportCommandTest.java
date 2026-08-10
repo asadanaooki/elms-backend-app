@@ -12,11 +12,17 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
 
 /** {@link LessonImportCommand} の単体テスト。 */
 class LessonImportCommandTest {
 
   private static final String HEADER = "レッスングループタイトル,レッスンタイトル,レッスン説明,レッスンの動画URL";
+
+  private static MockMultipartFile createCsvFile(String filename, String content) {
+    return new MockMultipartFile(
+        "file", filename, "text/csv", content.getBytes(StandardCharsets.UTF_8));
+  }
 
   @Nested
   class CSV読み込み {
@@ -31,8 +37,7 @@ class LessonImportCommandTest {
                   "Basic,Lesson 2,,");
 
       LessonImportCommand command =
-          LessonImportCommand.from(
-              UUID.randomUUID(), "lessons.csv", csv.getBytes(StandardCharsets.UTF_8));
+          LessonImportCommand.from(UUID.randomUUID(), createCsvFile("lessons.csv", csv));
 
       assertEquals(2, command.getImportedLessonCount());
       assertEquals(1, command.getImportedLessonGroupCount());
@@ -59,7 +64,7 @@ class LessonImportCommandTest {
               BadRequestException.class,
               () ->
                   LessonImportCommand.from(
-                      UUID.randomUUID(), "lessons.txt", HEADER.getBytes(StandardCharsets.UTF_8)));
+                      UUID.randomUUID(), createCsvFile("lessons.txt", HEADER)));
 
       assertEquals("CSVファイル形式が不正です", exception.getMessage());
     }
@@ -71,7 +76,7 @@ class LessonImportCommandTest {
               BadRequestException.class,
               () ->
                   LessonImportCommand.from(
-                      UUID.randomUUID(), "lessons.csv", HEADER.getBytes(StandardCharsets.UTF_8)));
+                      UUID.randomUUID(), createCsvFile("lessons.csv", HEADER)));
 
       assertEquals("取り込み対象のレッスンがありません", exception.getMessage());
     }
@@ -83,9 +88,7 @@ class LessonImportCommandTest {
       BadRequestException exception =
           assertThrows(
               BadRequestException.class,
-              () ->
-                  LessonImportCommand.from(
-                      UUID.randomUUID(), "lessons.csv", csv.getBytes(StandardCharsets.UTF_8)));
+              () -> LessonImportCommand.from(UUID.randomUUID(), createCsvFile("lessons.csv", csv)));
 
       assertEquals("CSVヘッダが不正です", exception.getMessage());
     }
@@ -97,9 +100,7 @@ class LessonImportCommandTest {
       BadRequestException exception =
           assertThrows(
               BadRequestException.class,
-              () ->
-                  LessonImportCommand.from(
-                      UUID.randomUUID(), "lessons.csv", csv.getBytes(StandardCharsets.UTF_8)));
+              () -> LessonImportCommand.from(UUID.randomUUID(), createCsvFile("lessons.csv", csv)));
 
       assertEquals("CSVファイルの形式が不正です", exception.getMessage());
     }
@@ -111,9 +112,7 @@ class LessonImportCommandTest {
       BadRequestException exception =
           assertThrows(
               BadRequestException.class,
-              () ->
-                  LessonImportCommand.from(
-                      UUID.randomUUID(), "lessons.csv", csv.getBytes(StandardCharsets.UTF_8)));
+              () -> LessonImportCommand.from(UUID.randomUUID(), createCsvFile("lessons.csv", csv)));
 
       assertEquals("行2: 列数が不正です", exception.getMessage());
     }
@@ -125,9 +124,7 @@ class LessonImportCommandTest {
       BadRequestException exception =
           assertThrows(
               BadRequestException.class,
-              () ->
-                  LessonImportCommand.from(
-                      UUID.randomUUID(), "lessons.csv", csv.getBytes(StandardCharsets.UTF_8)));
+              () -> LessonImportCommand.from(UUID.randomUUID(), createCsvFile("lessons.csv", csv)));
 
       assertEquals("行2: レッスングループタイトルは必須です", exception.getMessage());
     }

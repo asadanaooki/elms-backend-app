@@ -7,7 +7,6 @@ import com.everrefine.elms.application.dto.CourseDto;
 import com.everrefine.elms.application.dto.CourseLessonsDto;
 import com.everrefine.elms.application.dto.CoursePageDto;
 import com.everrefine.elms.application.dto.LessonImportResponseDto;
-import com.everrefine.elms.application.exception.BadRequestException;
 import com.everrefine.elms.application.service.CourseApplicationService;
 import com.everrefine.elms.application.service.LessonApplicationService;
 import com.everrefine.elms.presentation.request.CourseCreateRequest;
@@ -19,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -145,18 +143,10 @@ public class CourseController {
   @PostMapping(value = "/{courseId}/lessons/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<LessonImportResponseDto> importLessonsCsv(
       @PathVariable UUID courseId, @RequestParam("file") @NotNull MultipartFile file) {
-    LessonImportCommand lessonImportCommand = toLessonImportCommand(courseId, file);
+    LessonImportCommand lessonImportCommand = LessonImportCommand.from(courseId, file);
     LessonImportResponseDto response =
         lessonApplicationService.importLessonsCsv(lessonImportCommand);
     return ResponseEntity.ok(response);
-  }
-
-  private LessonImportCommand toLessonImportCommand(UUID courseId, MultipartFile file) {
-    try {
-      return LessonImportCommand.from(courseId, file.getOriginalFilename(), file.getBytes());
-    } catch (IOException e) {
-      throw new BadRequestException("CSVファイルの読み込みに失敗しました", e);
-    }
   }
 
   /**

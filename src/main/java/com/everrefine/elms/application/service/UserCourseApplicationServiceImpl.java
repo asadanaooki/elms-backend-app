@@ -1,7 +1,7 @@
 package com.everrefine.elms.application.service;
 
 import com.everrefine.elms.application.dto.UserCourseDto;
-import com.everrefine.elms.application.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.PagerForRequest;
 import com.everrefine.elms.domain.model.course.Course;
 import com.everrefine.elms.domain.model.lesson.LessonSearchCriteria;
