@@ -1,9 +1,11 @@
 package com.everrefine.elms.domain.repository;
 
+import com.everrefine.elms.domain.model.PagerForRequest;
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessons;
 import com.everrefine.elms.domain.model.lesson.LessonInGroup;
 import com.everrefine.elms.domain.model.lesson.LessonSearchCriteria;
+import com.everrefine.elms.domain.model.lesson.LessonSummary;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
 import java.math.BigDecimal;
 import java.util.List;
@@ -127,4 +129,13 @@ public interface LessonRepository {
    * @return 全レッスン一覧
    */
   List<LessonWithCourseAndLessonGroup> findAllLessons();
+
+  /**
+   * 指定されたタグ名に紐づくレッスンの概要を、ページング条件に従って取得する。
+   *
+   * @param tagName 検索対象のタグ名
+   * @param pagerForRequest ページ番号と1ページあたりの取得件数
+   * @return 指定されたページに含まれるレッスン概要の一覧。該当しない場合は空の一覧
+   */
+  List<LessonSummary> findLessonsByTagName(String tagName, PagerForRequest pagerForRequest);
 }
