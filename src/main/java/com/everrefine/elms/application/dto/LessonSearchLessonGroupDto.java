@@ -27,7 +27,7 @@ public record LessonSearchLessonGroupDto(
         firstLessonSummary.lessonGroupOrder(),
         firstLessonSummary.lessonGroupTitle(),
         lessonSummaries.stream()
-            .map(lessonSummary -> LessonSearchLessonDto.from(lessonSummary.lesson()))
+            .map(lessonSummary -> LessonSearchLessonDto.from(lessonSummary))
             .toList());
   }
 }

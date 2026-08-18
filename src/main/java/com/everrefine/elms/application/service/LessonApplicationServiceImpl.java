@@ -11,8 +11,7 @@ import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.LessonGroupDto;
 import com.everrefine.elms.application.dto.LessonImportResponseDto;
 import com.everrefine.elms.application.dto.LessonPageDto;
-import com.everrefine.elms.application.dto.LessonSearchCourseDto;
-import com.everrefine.elms.application.dto.LessonSearchResultDto;
+import com.everrefine.elms.application.dto.LessonSearchPageDto;
 import com.everrefine.elms.application.dto.LessonWithCourseAndLessonGroupDto;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.PagerForRequest;
@@ -257,27 +256,13 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
   }
 
   @Override
-  public LessonSearchResultDto searchLessonsByTagName(String tagName, int pageNum, int pageSize) {
+  @Transactional(readOnly = true)
+  public LessonSearchPageDto searchLessonsByTagName(String tagName, int pageNum, int pageSize) {
     PagerForRequest pagerForRequest = new PagerForRequest(pageNum, pageSize);
     List<LessonSummary> lessonSummaries =
         lessonRepository.findLessonsByTagName(tagName, pagerForRequest);
-
-    List<LessonSearchCourseDto> courseDtos =
-        lessonSummaries.stream()
-            .collect(
-                Collectors.groupingBy(
-                    LessonSummary::courseId,
-                    LinkedHashMap::new,
-                    Collectors.groupingBy(
-                        LessonSummary::lessonGroupId, LinkedHashMap::new, Collectors.toList())))
-            .values()
-            .stream()
-            .map(
-                lessonSummariesByLessonGroupId ->
-                    LessonSearchCourseDto.from(lessonSummariesByLessonGroupId.values()))
-            .toList();
-
-    return new LessonSearchResultDto(tagName, courseDtos);
+    int totalSize = lessonRepository.countLessonsByTagName(tagName);
+    return LessonSearchPageDto.from(tagName, lessonSummaries, pageNum, pageSize, totalSize);
   }
 
   /**

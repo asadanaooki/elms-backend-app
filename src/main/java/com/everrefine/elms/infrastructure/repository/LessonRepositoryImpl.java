@@ -157,4 +157,9 @@ public class LessonRepositoryImpl implements LessonRepository {
             tagName, pagerForRequest.pageSize(), pagerForRequest.getOffset());
     return LessonSummaryRow.toDomainList(rows);
   }
+
+  @Override
+  public int countLessonsByTagName(String tagName) {
+    return lessonDao.countLessonsByTagName(tagName);
+  }
 }

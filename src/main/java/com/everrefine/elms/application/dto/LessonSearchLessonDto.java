@@ -1,6 +1,6 @@
 package com.everrefine.elms.application.dto;
 
-import com.everrefine.elms.domain.model.lesson.LessonSummaryItem;
+import com.everrefine.elms.domain.model.lesson.LessonSummary;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,15 +16,15 @@ public record LessonSearchLessonDto(
   /**
    * タグ検索結果に含まれるレッスンの読み取りモデルからDTOを生成する。
    *
-   * @param lessonSummaryItem レッスンの概要とタグ一覧を持つ読み取りモデル
+   * @param lessonSummary レッスンの概要とタグ一覧を持つ読み取りモデル
    * @return レッスン検索結果に含まれるレッスンDTO
    */
-  public static LessonSearchLessonDto from(LessonSummaryItem lessonSummaryItem) {
+  public static LessonSearchLessonDto from(LessonSummary lessonSummary) {
     return new LessonSearchLessonDto(
-        lessonSummaryItem.lessonId(),
-        lessonSummaryItem.lessonOrder(),
-        lessonSummaryItem.lessonTitle(),
-        lessonSummaryItem.tags().stream()
+        lessonSummary.lessonId(),
+        lessonSummary.lessonOrder(),
+        lessonSummary.lessonTitle(),
+        lessonSummary.tags().stream()
             .map(tag -> new TagDto(tag.id(), tag.name().value()))
             .toList());
   }

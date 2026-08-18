@@ -18,7 +18,7 @@ import com.everrefine.elms.application.dto.LessonPageDto;
 import com.everrefine.elms.application.dto.LessonSearchCourseDto;
 import com.everrefine.elms.application.dto.LessonSearchLessonDto;
 import com.everrefine.elms.application.dto.LessonSearchLessonGroupDto;
-import com.everrefine.elms.application.dto.LessonSearchResultDto;
+import com.everrefine.elms.application.dto.LessonSearchPageDto;
 import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.lesson.Lesson;
@@ -1089,13 +1089,15 @@ public class LessonApplicationServiceImplTest {
       String tagName = "存在しない検索タグ-" + UUID.randomUUID();
 
       // Act
-      LessonSearchResultDto result =
-          lessonApplicationService.searchLessonsByTagName(tagName, 1, 10);
+      LessonSearchPageDto result = lessonApplicationService.searchLessonsByTagName(tagName, 1, 10);
 
       // Assert
       assertNotNull(result);
       assertEquals(tagName, result.tag());
       assertTrue(result.courses().isEmpty());
+      assertEquals(1, result.pageNum());
+      assertEquals(10, result.pageSize());
+      assertEquals(0, result.totalSize());
     }
 
     @Test
@@ -1144,12 +1146,14 @@ public class LessonApplicationServiceImplTest {
           thirdLessonGroupId, secondCourseId, new BigDecimal("200"), "グループ3検索対象外レッスン", null, null);
 
       // Act
-      LessonSearchResultDto result =
-          lessonApplicationService.searchLessonsByTagName(tagName, 1, 10);
+      LessonSearchPageDto result = lessonApplicationService.searchLessonsByTagName(tagName, 1, 10);
 
       // Assert - 件数と各階層の表示順
       assertNotNull(result);
       assertEquals(tagName, result.tag());
+      assertEquals(1, result.pageNum());
+      assertEquals(10, result.pageSize());
+      assertEquals(6, result.totalSize());
       assertEquals(2, result.courses().size());
       assertEquals(
           List.of(firstCourseId, secondCourseId),
@@ -1226,17 +1230,56 @@ public class LessonApplicationServiceImplTest {
       }
 
       // Act
-      LessonSearchResultDto firstPage =
+      LessonSearchPageDto firstPage =
           lessonApplicationService.searchLessonsByTagName(tagName, 1, 10);
-      LessonSearchResultDto thirdPage =
+      LessonSearchPageDto thirdPage =
           lessonApplicationService.searchLessonsByTagName(tagName, 3, 10);
-      LessonSearchResultDto lastPage =
+      LessonSearchPageDto lastPage =
           lessonApplicationService.searchLessonsByTagName(tagName, 4, 10);
 
       // Assert
       assertPage(firstPage, tagName, 10, lessonIdsByOrder.get(1), lessonIdsByOrder.get(10));
       assertPage(thirdPage, tagName, 10, lessonIdsByOrder.get(21), lessonIdsByOrder.get(30));
       assertPage(lastPage, tagName, 3, lessonIdsByOrder.get(31), lessonIdsByOrder.get(33));
+      assertEquals(1, firstPage.pageNum());
+      assertEquals(3, thirdPage.pageNum());
+      assertEquals(4, lastPage.pageNum());
+      assertEquals(10, firstPage.pageSize());
+      assertEquals(10, thirdPage.pageSize());
+      assertEquals(10, lastPage.pageSize());
+      assertEquals(33, firstPage.totalSize());
+      assertEquals(33, thirdPage.totalSize());
+      assertEquals(33, lastPage.totalSize());
+    }
+
+    @Test
+    void ページ範囲外の場合は空のコース一覧とページング前の総件数を返すこと() {
+      // Arrange
+      String tagName = "範囲外ページ検索対象タグ-" + UUID.randomUUID();
+      UUID targetTagId = testData.createTag(tagName);
+      UUID courseId = testData.createCourse(new BigDecimal("100"), "範囲外ページ検索コース", "コース説明");
+      UUID lessonGroupId =
+          testData.createLessonGroup(courseId, new BigDecimal("100"), "範囲外ページ検索レッスングループ");
+
+      for (int lessonOrder = 1; lessonOrder <= 3; lessonOrder++) {
+        createLessonWithTag(
+            lessonGroupId,
+            courseId,
+            BigDecimal.valueOf(lessonOrder),
+            "範囲外ページ検索レッスン" + lessonOrder,
+            targetTagId);
+      }
+
+      // Act - 1ページ3件で、データが存在しない2ページ目を取得する
+      LessonSearchPageDto result = lessonApplicationService.searchLessonsByTagName(tagName, 2, 3);
+
+      // Assert
+      assertNotNull(result);
+      assertEquals(tagName, result.tag());
+      assertTrue(result.courses().isEmpty());
+      assertEquals(2, result.pageNum());
+      assertEquals(3, result.pageSize());
+      assertEquals(3, result.totalSize());
     }
 
     private UUID createLessonWithTag(
@@ -1247,7 +1290,7 @@ public class LessonApplicationServiceImplTest {
       return lessonId;
     }
 
-    private List<LessonSearchLessonDto> flattenLessons(LessonSearchResultDto result) {
+    private List<LessonSearchLessonDto> flattenLessons(LessonSearchPageDto result) {
       return result.courses().stream()
           .flatMap(course -> course.lessonGroups().stream())
           .flatMap(lessonGroup -> lessonGroup.lessons().stream())
@@ -1255,7 +1298,7 @@ public class LessonApplicationServiceImplTest {
     }
 
     private void assertPage(
-        LessonSearchResultDto result,
+        LessonSearchPageDto result,
         String expectedTagName,
         int expectedLessonCount,
         UUID expectedFirstLessonId,

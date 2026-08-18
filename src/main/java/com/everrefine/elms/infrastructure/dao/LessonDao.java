@@ -174,4 +174,14 @@ public interface LessonDao extends CrudRepository<LessonEntity, UUID> {
       @Param("tagName") String tagName,
       @Param("pageSize") int pageSize,
       @Param("offset") int offset);
+
+  @Query(
+      """
+          SELECT COUNT(*)
+          FROM lessons l
+          INNER JOIN lesson_tags lt ON lt.lesson_id = l.id
+          INNER JOIN tags t ON t.id = lt.tag_id
+          WHERE t.name = :tagName
+          """)
+  int countLessonsByTagName(@Param("tagName") String tagName);
 }

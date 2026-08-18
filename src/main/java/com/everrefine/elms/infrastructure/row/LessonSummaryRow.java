@@ -1,7 +1,6 @@
 package com.everrefine.elms.infrastructure.row;
 
 import com.everrefine.elms.domain.model.lesson.LessonSummary;
-import com.everrefine.elms.domain.model.lesson.LessonSummaryItem;
 import com.everrefine.elms.domain.model.tag.Tag;
 import com.everrefine.elms.domain.model.tag.TagName;
 import java.math.BigDecimal;
@@ -14,8 +13,8 @@ import java.util.stream.Collectors;
 /**
  * 指定されたタグに紐づくレッスンを検索するJOINクエリの、1行分の結果を表す読み取りモデル。
  *
- * <p>1件のレッスンに複数のタグが紐づく場合は、タグごとに1行ずつ取得される。 {@link #toDomainList(List)}
- * はそれらの行をレッスン単位に集約し、タグ一覧を持つドメインモデルへ変換する。
+ * <p>1件のレッスンに複数のタグが紐づく場合は、タグごとに1行ずつ取得される。 {@link #toDomainList(List)} はそれらの行をレッスン単位に集約し、タグ一覧を持つ
+ * {@link LessonSummary} へ変換する。
  */
 public record LessonSummaryRow(
     UUID courseId,
@@ -36,7 +35,7 @@ public record LessonSummaryRow(
    * JOINクエリの結果をレッスン単位に集約し、レッスン概要の一覧へ変換する。
    *
    * @param rows JOINクエリによって取得した行の一覧
-   * @return コースおよびレッスングループの情報を含むレッスン概要の一覧
+   * @return コース・レッスングループ・タグの情報を含むレッスン概要の一覧
    */
   public static List<LessonSummary> toDomainList(List<LessonSummaryRow> rows) {
     return rows.stream()
@@ -53,7 +52,7 @@ public record LessonSummaryRow(
    * 同一レッスンを表す行の一覧を、1件のレッスン概要へ変換する。
    *
    * @param rows 同一レッスンを表す行の一覧
-   * @return コースおよびレッスングループの情報を含むレッスン概要
+   * @return コース・レッスングループ・タグの情報を含むレッスン概要
    */
   private static LessonSummary toLessonSummary(List<LessonSummaryRow> rows) {
     LessonSummaryRow head = rows.getFirst();
@@ -64,19 +63,9 @@ public record LessonSummaryRow(
         head.lessonGroupId(),
         head.lessonGroupOrder(),
         head.lessonGroupTitle(),
-        toLessonSummaryItem(rows));
-  }
-
-  /**
-   * 同一レッスンを表す行の一覧から、タグ一覧を持つレッスン情報を生成する。
-   *
-   * @param rows 同一レッスンを表す行の一覧
-   * @return タグ一覧を持つレッスン情報
-   */
-  private static LessonSummaryItem toLessonSummaryItem(List<LessonSummaryRow> rows) {
-    LessonSummaryRow head = rows.getFirst();
-
-    List<Tag> tags =
+        head.lessonId,
+        head.lessonOrder,
+        head.title,
         rows.stream()
             .map(
                 row ->
@@ -85,8 +74,6 @@ public record LessonSummaryRow(
                         new TagName(row.tagName()),
                         row.tagCreatedAt(),
                         row.tagUpdatedAt()))
-            .toList();
-
-    return new LessonSummaryItem(head.lessonId, head.lessonOrder, head.title, tags);
+            .toList());
   }
 }

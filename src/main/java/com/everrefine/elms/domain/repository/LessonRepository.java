@@ -135,7 +135,15 @@ public interface LessonRepository {
    *
    * @param tagName 検索対象のタグ名
    * @param pagerForRequest ページ番号と1ページあたりの取得件数
-   * @return 指定されたページに含まれるレッスン概要の一覧。該当しない場合は空の一覧
+   * @return 指定されたページに含まれるレッスン概要の一覧。指定ページにデータがない場合は空の一覧
    */
   List<LessonSummary> findLessonsByTagName(String tagName, PagerForRequest pagerForRequest);
+
+  /**
+   * 指定されたタグ名に紐づくレッスンの件数を取得する。
+   *
+   * @param tagName 検索対象のタグ名
+   * @return ページング前の、指定されたタグ名に紐づくレッスンの総件数
+   */
+  int countLessonsByTagName(String tagName);
 }

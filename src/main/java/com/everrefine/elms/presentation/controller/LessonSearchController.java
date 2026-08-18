@@ -1,6 +1,6 @@
 package com.everrefine.elms.presentation.controller;
 
-import com.everrefine.elms.application.dto.LessonSearchResultDto;
+import com.everrefine.elms.application.dto.LessonSearchPageDto;
 import com.everrefine.elms.application.service.LessonApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -29,7 +29,7 @@ public class LessonSearchController {
    * @param tagName 検索対象のタグ名
    * @param pageNum ページ番号
    * @param pageSize 1ページあたりの件数
-   * @return タグによるレッスン検索結果DTO
+   * @return タグによるレッスン検索結果のページDTO
    */
   @Operation(summary = "タグによるレッスン検索", description = "指定されたタグ名に紐づくレッスンを全コースから検索します")
   @ApiResponses({
@@ -38,7 +38,7 @@ public class LessonSearchController {
     @ApiResponse(responseCode = "401", description = "認証されていません")
   })
   @GetMapping("/search")
-  public LessonSearchResultDto searchLessonsByTagName(
+  public LessonSearchPageDto searchLessonsByTagName(
       @RequestParam(name = "tag") @NotBlank String tagName,
       @RequestParam(name = "page", defaultValue = "1") @Positive int pageNum,
       @RequestParam(name = "pageSize", defaultValue = "10") @Positive int pageSize) {
