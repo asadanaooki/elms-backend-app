@@ -9,6 +9,7 @@ import com.everrefine.elms.application.dto.CourseLessonsDto;
 import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.LessonImportResponseDto;
 import com.everrefine.elms.application.dto.LessonPageDto;
+import com.everrefine.elms.application.dto.LessonSearchPageDto;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
 
@@ -32,6 +33,16 @@ public interface LessonApplicationService {
    * @return レッスンページDTO
    */
   LessonPageDto findLessons(LessonSearchCommand lessonSearchCommand);
+
+  /**
+   * 指定されたタグ名に紐づくレッスンをページング検索し、コースおよびレッスングループ単位にまとめて取得する。
+   *
+   * @param tagName 検索対象のタグ名
+   * @param pageNum ページ番号（1以上）
+   * @param pageSize 1ページ当たりの件数（1以上）
+   * @return タグに紐づくレッスンとページ情報を持つ検索結果
+   */
+  LessonSearchPageDto searchLessonsByTagName(String tagName, int pageNum, int pageSize);
 
   /**
    * コースIDに紐づくレッスンをレッスングループごとにまとめて取得する。

@@ -1,15 +1,18 @@
 package com.everrefine.elms.infrastructure.repository;
 
+import com.everrefine.elms.domain.model.PagerForRequest;
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessons;
 import com.everrefine.elms.domain.model.lesson.LessonInGroup;
 import com.everrefine.elms.domain.model.lesson.LessonSearchCriteria;
+import com.everrefine.elms.domain.model.lesson.LessonSummary;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.infrastructure.dao.LessonDao;
 import com.everrefine.elms.infrastructure.dao.LessonGroupDao;
 import com.everrefine.elms.infrastructure.entity.lesson.LessonEntity;
 import com.everrefine.elms.infrastructure.row.LessonGroupWithLessonRow;
+import com.everrefine.elms.infrastructure.row.LessonSummaryRow;
 import com.everrefine.elms.infrastructure.row.LessonWithCourseAndLessonGroupRow;
 import com.everrefine.elms.infrastructure.row.LessonWithTagRow;
 import java.math.BigDecimal;
@@ -145,5 +148,18 @@ public class LessonRepositoryImpl implements LessonRepository {
     return lessonDao.findByAllLessons().stream()
         .map(LessonWithCourseAndLessonGroupRow::toDomain)
         .toList();
+  }
+
+  @Override
+  public List<LessonSummary> findLessonsByTagName(String tagName, PagerForRequest pagerForRequest) {
+    List<LessonSummaryRow> rows =
+        lessonDao.findLessonsByTagName(
+            tagName, pagerForRequest.pageSize(), pagerForRequest.getOffset());
+    return LessonSummaryRow.toDomainList(rows);
+  }
+
+  @Override
+  public int countLessonsByTagName(String tagName) {
+    return lessonDao.countLessonsByTagName(tagName);
   }
 }

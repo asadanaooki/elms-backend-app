@@ -15,6 +15,10 @@ import com.everrefine.elms.application.dto.CourseLessonsDto;
 import com.everrefine.elms.application.dto.LessonDto;
 import com.everrefine.elms.application.dto.LessonImportResponseDto;
 import com.everrefine.elms.application.dto.LessonPageDto;
+import com.everrefine.elms.application.dto.LessonSearchCourseDto;
+import com.everrefine.elms.application.dto.LessonSearchLessonDto;
+import com.everrefine.elms.application.dto.LessonSearchLessonGroupDto;
+import com.everrefine.elms.application.dto.LessonSearchPageDto;
 import com.everrefine.elms.application.dto.TagDto;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.lesson.Lesson;
@@ -27,8 +31,10 @@ import com.everrefine.elms.presentation.request.LessonUpdateRequest;
 import com.everrefine.elms.testsupport.TestDataFactory;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -1071,6 +1077,237 @@ public class LessonApplicationServiceImplTest {
           0,
           jdbcTemplate.queryForObject(
               "SELECT COUNT(*) FROM lesson_tags WHERE lesson_id = ?", Integer.class, lessonId));
+    }
+  }
+
+  @Nested
+  class タグ名によるレッスン検索 {
+
+    @Test
+    void 指定タグに紐づくレッスンが存在しない場合は空のコース一覧が返ること() {
+      // Arrange
+      String tagName = "存在しない検索タグ-" + UUID.randomUUID();
+
+      // Act
+      LessonSearchPageDto result = lessonApplicationService.searchLessonsByTagName(tagName, 1, 10);
+
+      // Assert
+      assertNotNull(result);
+      assertEquals(tagName, result.tag());
+      assertTrue(result.courses().isEmpty());
+      assertEquals(1, result.pageNum());
+      assertEquals(10, result.pageSize());
+      assertEquals(0, result.totalSize());
+    }
+
+    @Test
+    void 指定タグに紐づくレッスンを階層化して表示順の昇順で取得できること() {
+      // Arrange - 登録順と表示順を逆転させ、SQLのORDER BYがレスポンスへ反映されることを確認する
+      String tagName = "階層検索対象タグ-" + UUID.randomUUID();
+      String additionalTagName = "階層検索追加タグ-" + UUID.randomUUID();
+      UUID targetTagId = testData.createTag(tagName);
+      UUID additionalTagId = testData.createTag(additionalTagName);
+
+      UUID secondCourseId = testData.createCourse(new BigDecimal("200"), "タグ検索コース2", "タグ検索コース2の説明");
+      UUID firstCourseId = testData.createCourse(new BigDecimal("100"), "タグ検索コース1", "タグ検索コース1の説明");
+
+      UUID secondLessonGroupId =
+          testData.createLessonGroup(firstCourseId, new BigDecimal("200"), "タグ検索レッスングループ2");
+      UUID firstLessonGroupId =
+          testData.createLessonGroup(firstCourseId, new BigDecimal("100"), "タグ検索レッスングループ1");
+      UUID thirdLessonGroupId =
+          testData.createLessonGroup(secondCourseId, new BigDecimal("100"), "タグ検索レッスングループ3");
+
+      UUID firstGroupSecondLessonId =
+          createLessonWithTag(
+              firstLessonGroupId, firstCourseId, new BigDecimal("200"), "グループ1レッスン2", targetTagId);
+      UUID firstGroupFirstLessonId =
+          createLessonWithTag(
+              firstLessonGroupId, firstCourseId, new BigDecimal("100"), "グループ1レッスン1", targetTagId);
+
+      UUID secondGroupThirdLessonId =
+          createLessonWithTag(
+              secondLessonGroupId, firstCourseId, new BigDecimal("300"), "グループ2レッスン3", targetTagId);
+      UUID secondGroupFirstLessonId =
+          createLessonWithTag(
+              secondLessonGroupId, firstCourseId, new BigDecimal("100"), "グループ2レッスン1", targetTagId);
+      testData.createLessonTag(secondGroupFirstLessonId, additionalTagId);
+      UUID secondGroupSecondLessonId =
+          createLessonWithTag(
+              secondLessonGroupId, firstCourseId, new BigDecimal("200"), "グループ2レッスン2", targetTagId);
+
+      UUID thirdGroupFirstLessonId =
+          createLessonWithTag(
+              thirdLessonGroupId, secondCourseId, new BigDecimal("100"), "グループ3レッスン1", targetTagId);
+
+      testData.createLesson(
+          firstLessonGroupId, firstCourseId, new BigDecimal("300"), "グループ1検索対象外レッスン", null, null);
+      testData.createLesson(
+          thirdLessonGroupId, secondCourseId, new BigDecimal("200"), "グループ3検索対象外レッスン", null, null);
+
+      // Act
+      LessonSearchPageDto result = lessonApplicationService.searchLessonsByTagName(tagName, 1, 10);
+
+      // Assert - 件数と各階層の表示順
+      assertNotNull(result);
+      assertEquals(tagName, result.tag());
+      assertEquals(1, result.pageNum());
+      assertEquals(10, result.pageSize());
+      assertEquals(6, result.totalSize());
+      assertEquals(2, result.courses().size());
+      assertEquals(
+          List.of(firstCourseId, secondCourseId),
+          result.courses().stream().map(LessonSearchCourseDto::courseId).toList());
+
+      LessonSearchCourseDto firstCourse = result.courses().getFirst();
+      LessonSearchCourseDto secondCourse = result.courses().get(1);
+      assertEquals(2, firstCourse.lessonGroups().size());
+      assertEquals(1, secondCourse.lessonGroups().size());
+      assertEquals(
+          List.of(firstLessonGroupId, secondLessonGroupId),
+          firstCourse.lessonGroups().stream()
+              .map(LessonSearchLessonGroupDto::lessonGroupId)
+              .toList());
+      assertEquals(thirdLessonGroupId, secondCourse.lessonGroups().getFirst().lessonGroupId());
+
+      LessonSearchLessonGroupDto firstLessonGroup = firstCourse.lessonGroups().getFirst();
+      LessonSearchLessonGroupDto secondLessonGroup = firstCourse.lessonGroups().get(1);
+      LessonSearchLessonGroupDto thirdLessonGroup = secondCourse.lessonGroups().getFirst();
+      assertEquals(2, firstLessonGroup.lessons().size());
+      assertEquals(3, secondLessonGroup.lessons().size());
+      assertEquals(1, thirdLessonGroup.lessons().size());
+      assertEquals(
+          List.of(firstGroupFirstLessonId, firstGroupSecondLessonId),
+          firstLessonGroup.lessons().stream().map(LessonSearchLessonDto::lessonId).toList());
+      assertEquals(
+          List.of(secondGroupFirstLessonId, secondGroupSecondLessonId, secondGroupThirdLessonId),
+          secondLessonGroup.lessons().stream().map(LessonSearchLessonDto::lessonId).toList());
+      assertEquals(thirdGroupFirstLessonId, thirdLessonGroup.lessons().getFirst().lessonId());
+      assertEquals(6, flattenLessons(result).size());
+      assertEquals(
+          7, flattenLessons(result).stream().mapToInt(lesson -> lesson.tags().size()).sum());
+
+      // Assert - 1つ目のコースの各フィールド
+      assertEquals(firstCourseId, firstCourse.courseId());
+      assertEquals(new BigDecimal("100.0000"), firstCourse.courseOrder());
+      assertEquals("タグ検索コース1", firstCourse.courseTitle());
+
+      // Assert - 2つ目のレッスングループの各フィールド
+      assertEquals(secondLessonGroupId, secondLessonGroup.lessonGroupId());
+      assertEquals(new BigDecimal("200.0000"), secondLessonGroup.lessonGroupOrder());
+      assertEquals("タグ検索レッスングループ2", secondLessonGroup.lessonGroupTitle());
+
+      // Assert - 2つ目のレッスングループの最初のレッスンと、その全タグ
+      LessonSearchLessonDto firstLessonInSecondGroup = secondLessonGroup.lessons().getFirst();
+      assertEquals(secondGroupFirstLessonId, firstLessonInSecondGroup.lessonId());
+      assertEquals(new BigDecimal("100.0000"), firstLessonInSecondGroup.lessonOrder());
+      assertEquals("グループ2レッスン1", firstLessonInSecondGroup.title());
+      assertEquals(2, firstLessonInSecondGroup.tags().size());
+      assertEquals(
+          Set.of(new TagDto(targetTagId, tagName), new TagDto(additionalTagId, additionalTagName)),
+          Set.copyOf(firstLessonInSecondGroup.tags()));
+    }
+
+    @Test
+    void 指定ページのレッスンを10件ずつ取得し最終ページでは残り3件を取得できること() {
+      // Arrange - 33件を表示順の降順で登録し、ページング前に昇順で並ぶことを確認する
+      String tagName = "ページング検索対象タグ-" + UUID.randomUUID();
+      UUID targetTagId = testData.createTag(tagName);
+      UUID courseId = testData.createCourse(new BigDecimal("300"), "ページング検索コース", "ページング検索コースの説明");
+      UUID lessonGroupId =
+          testData.createLessonGroup(courseId, new BigDecimal("100"), "ページング検索レッスングループ");
+      Map<Integer, UUID> lessonIdsByOrder = new HashMap<>();
+
+      for (int lessonOrder = 33; lessonOrder >= 1; lessonOrder--) {
+        UUID lessonId =
+            createLessonWithTag(
+                lessonGroupId,
+                courseId,
+                BigDecimal.valueOf(lessonOrder),
+                "ページング検索レッスン" + lessonOrder,
+                targetTagId);
+        lessonIdsByOrder.put(lessonOrder, lessonId);
+      }
+
+      // Act
+      LessonSearchPageDto firstPage =
+          lessonApplicationService.searchLessonsByTagName(tagName, 1, 10);
+      LessonSearchPageDto thirdPage =
+          lessonApplicationService.searchLessonsByTagName(tagName, 3, 10);
+      LessonSearchPageDto lastPage =
+          lessonApplicationService.searchLessonsByTagName(tagName, 4, 10);
+
+      // Assert
+      assertPage(firstPage, tagName, 10, lessonIdsByOrder.get(1), lessonIdsByOrder.get(10));
+      assertPage(thirdPage, tagName, 10, lessonIdsByOrder.get(21), lessonIdsByOrder.get(30));
+      assertPage(lastPage, tagName, 3, lessonIdsByOrder.get(31), lessonIdsByOrder.get(33));
+      assertEquals(1, firstPage.pageNum());
+      assertEquals(3, thirdPage.pageNum());
+      assertEquals(4, lastPage.pageNum());
+      assertEquals(10, firstPage.pageSize());
+      assertEquals(10, thirdPage.pageSize());
+      assertEquals(10, lastPage.pageSize());
+      assertEquals(33, firstPage.totalSize());
+      assertEquals(33, thirdPage.totalSize());
+      assertEquals(33, lastPage.totalSize());
+    }
+
+    @Test
+    void ページ範囲外の場合は空のコース一覧とページング前の総件数を返すこと() {
+      // Arrange
+      String tagName = "範囲外ページ検索対象タグ-" + UUID.randomUUID();
+      UUID targetTagId = testData.createTag(tagName);
+      UUID courseId = testData.createCourse(new BigDecimal("100"), "範囲外ページ検索コース", "コース説明");
+      UUID lessonGroupId =
+          testData.createLessonGroup(courseId, new BigDecimal("100"), "範囲外ページ検索レッスングループ");
+
+      for (int lessonOrder = 1; lessonOrder <= 3; lessonOrder++) {
+        createLessonWithTag(
+            lessonGroupId,
+            courseId,
+            BigDecimal.valueOf(lessonOrder),
+            "範囲外ページ検索レッスン" + lessonOrder,
+            targetTagId);
+      }
+
+      // Act - 1ページ3件で、データが存在しない2ページ目を取得する
+      LessonSearchPageDto result = lessonApplicationService.searchLessonsByTagName(tagName, 2, 3);
+
+      // Assert
+      assertNotNull(result);
+      assertEquals(tagName, result.tag());
+      assertTrue(result.courses().isEmpty());
+      assertEquals(2, result.pageNum());
+      assertEquals(3, result.pageSize());
+      assertEquals(3, result.totalSize());
+    }
+
+    private UUID createLessonWithTag(
+        UUID lessonGroupId, UUID courseId, BigDecimal lessonOrder, String lessonTitle, UUID tagId) {
+      UUID lessonId =
+          testData.createLesson(lessonGroupId, courseId, lessonOrder, lessonTitle, null, null);
+      testData.createLessonTag(lessonId, tagId);
+      return lessonId;
+    }
+
+    private List<LessonSearchLessonDto> flattenLessons(LessonSearchPageDto result) {
+      return result.courses().stream()
+          .flatMap(course -> course.lessonGroups().stream())
+          .flatMap(lessonGroup -> lessonGroup.lessons().stream())
+          .toList();
+    }
+
+    private void assertPage(
+        LessonSearchPageDto result,
+        String expectedTagName,
+        int expectedLessonCount,
+        UUID expectedFirstLessonId,
+        UUID expectedLastLessonId) {
+      List<LessonSearchLessonDto> lessons = flattenLessons(result);
+      assertEquals(expectedTagName, result.tag());
+      assertEquals(expectedLessonCount, lessons.size());
+      assertEquals(expectedFirstLessonId, lessons.getFirst().lessonId());
+      assertEquals(expectedLastLessonId, lessons.getLast().lessonId());
     }
   }
 }

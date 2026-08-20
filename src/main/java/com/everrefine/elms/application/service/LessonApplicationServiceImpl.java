@@ -6,12 +6,20 @@ import com.everrefine.elms.application.command.LessonImportRowCommand;
 import com.everrefine.elms.application.command.LessonOrderUpdateCommand;
 import com.everrefine.elms.application.command.LessonSearchCommand;
 import com.everrefine.elms.application.command.LessonUpdateCommand;
-import com.everrefine.elms.application.dto.*;
+import com.everrefine.elms.application.dto.CourseLessonsDto;
+import com.everrefine.elms.application.dto.LessonDto;
+import com.everrefine.elms.application.dto.LessonGroupDto;
+import com.everrefine.elms.application.dto.LessonImportResponseDto;
+import com.everrefine.elms.application.dto.LessonPageDto;
+import com.everrefine.elms.application.dto.LessonSearchPageDto;
+import com.everrefine.elms.application.dto.LessonWithCourseAndLessonGroupDto;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.model.PagerForRequest;
 import com.everrefine.elms.domain.model.course.Course;
 import com.everrefine.elms.domain.model.lesson.Lesson;
 import com.everrefine.elms.domain.model.lesson.LessonGroup;
 import com.everrefine.elms.domain.model.lesson.LessonGroupWithLessons;
+import com.everrefine.elms.domain.model.lesson.LessonSummary;
 import com.everrefine.elms.domain.model.lesson.LessonWithCourseAndLessonGroup;
 import com.everrefine.elms.domain.model.tag.LessonTag;
 import com.everrefine.elms.domain.model.tag.Tag;
@@ -245,6 +253,16 @@ public class LessonApplicationServiceImpl implements LessonApplicationService {
     Lesson savedLesson = lessonRepository.updateLesson(updatedLesson);
 
     return LessonDto.from(savedLesson, tagRepository.findAllTagsByLessonId(targetLessonId));
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public LessonSearchPageDto searchLessonsByTagName(String tagName, int pageNum, int pageSize) {
+    PagerForRequest pagerForRequest = new PagerForRequest(pageNum, pageSize);
+    List<LessonSummary> lessonSummaries =
+        lessonRepository.findLessonsByTagName(tagName, pagerForRequest);
+    int totalSize = lessonRepository.countLessonsByTagName(tagName);
+    return LessonSearchPageDto.from(tagName, lessonSummaries, pageNum, pageSize, totalSize);
   }
 
   /**

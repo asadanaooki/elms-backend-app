@@ -1,6 +1,7 @@
 package com.everrefine.elms.infrastructure.dao;
 
 import com.everrefine.elms.infrastructure.entity.lesson.LessonEntity;
+import com.everrefine.elms.infrastructure.row.LessonSummaryRow;
 import com.everrefine.elms.infrastructure.row.LessonWithCourseAndLessonGroupRow;
 import com.everrefine.elms.infrastructure.row.LessonWithTagRow;
 import java.math.BigDecimal;
@@ -126,4 +127,61 @@ public interface LessonDao extends CrudRepository<LessonEntity, UUID> {
          ORDER BY c.course_order ASC, lg.lesson_group_order ASC, l.lesson_order ASC
          """)
   List<LessonWithCourseAndLessonGroupRow> findByAllLessons();
+
+  @Query(
+      """
+          WITH paged_lessons AS (
+            SELECT
+              c.id AS course_id,
+              c.course_order,
+              c.title AS course_title,
+              lg.id AS lesson_group_id,
+              lg.lesson_group_order,
+              lg.title AS lesson_group_title,
+              l.id AS lesson_id,
+              l.lesson_order,
+              l.title
+            FROM lessons l
+            INNER JOIN lesson_tags matched_lt ON matched_lt.lesson_id = l.id
+            INNER JOIN tags matched_t ON matched_t.id = matched_lt.tag_id
+            INNER JOIN lesson_groups lg ON lg.id = l.lesson_group_id
+            INNER JOIN courses c ON c.id = l.course_id
+            WHERE matched_t.name = :tagName
+            ORDER BY c.course_order ASC, lg.lesson_group_order ASC, l.lesson_order ASC
+            LIMIT :pageSize
+            OFFSET :offset
+          )
+          SELECT
+            pl.course_id,
+            pl.course_order,
+            pl.course_title,
+            pl.lesson_group_id,
+            pl.lesson_group_order,
+            pl.lesson_group_title,
+            pl.lesson_id,
+            pl.lesson_order,
+            pl.title,
+            t.id AS tag_id,
+            t.name AS tag_name,
+            t.created_at AS tag_created_at,
+            t.updated_at AS tag_updated_at
+          FROM paged_lessons pl
+          INNER JOIN lesson_tags lt ON lt.lesson_id = pl.lesson_id
+          INNER JOIN tags t ON lt.tag_id = t.id
+          ORDER BY pl.course_order ASC, pl.lesson_group_order ASC, pl.lesson_order ASC
+          """)
+  List<LessonSummaryRow> findLessonsByTagName(
+      @Param("tagName") String tagName,
+      @Param("pageSize") int pageSize,
+      @Param("offset") int offset);
+
+  @Query(
+      """
+          SELECT COUNT(*)
+          FROM lessons l
+          INNER JOIN lesson_tags lt ON lt.lesson_id = l.id
+          INNER JOIN tags t ON t.id = lt.tag_id
+          WHERE t.name = :tagName
+          """)
+  int countLessonsByTagName(@Param("tagName") String tagName);
 }
