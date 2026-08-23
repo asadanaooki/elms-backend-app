@@ -1,5 +1,6 @@
 package com.everrefine.elms.application.service;
 
+import com.everrefine.elms.application.mail.MailTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
@@ -21,50 +22,21 @@ public class MailApplicationServiceImpl implements MailApplicationService {
 
   @Override
   public void sendPasswordResetCompleteEmail(String to) {
-    SimpleMailMessage message = new SimpleMailMessage();
-    message.setFrom(fromAddress);
-    message.setTo(to);
-    message.setSubject("【Javaエンジニア養成講座】パスワード再設定が完了しました");
-    message.setText(
-        """
-        Javaエンジニア養成講座をご利用いただきありがとうございます。
-
-        以下のアカウントのパスワード再設定が完了しました。
-
-        メールアドレス：%s
-
-        ※ ご自身で操作していない場合は、お問い合わせください。
-
-        ──────────────────────────────
-        Javaエンジニア養成講座
-        """
-            .formatted(to));
-    mailSender.send(message);
+    sendMail(to, MailTemplate.PASSWORD_RESET_COMPLETE, to);
   }
 
   @Override
   public void sendPasswordResetEmail(String to, String token) {
     String resetLink = passwordResetBaseUrl + "/reset-password?token=" + token;
+    sendMail(to, MailTemplate.PASSWORD_RESET, resetLink);
+  }
+
+  private void sendMail(String to, MailTemplate template, Object... args) {
     SimpleMailMessage message = new SimpleMailMessage();
     message.setFrom(fromAddress);
     message.setTo(to);
-    message.setSubject("【Javaエンジニア養成講座】パスワード再設定のご案内");
-    message.setText(
-        """
-        Javaエンジニア養成講座をご利用いただきありがとうございます。
-
-        パスワード再設定のリクエストを受け付けました。
-        以下のリンクをクリックして、新しいパスワードを設定してください。
-
-        %s
-
-        ※ このリンクは発行から30分間有効です。
-        ※ ご自身でリクエストしていない場合は、このメールを無視してください。
-
-        ──────────────────────────────
-        Javaエンジニア養成講座
-        """
-            .formatted(resetLink));
+    message.setSubject(template.getSubject());
+    message.setText(template.getText().formatted(args));
     mailSender.send(message);
   }
 }
