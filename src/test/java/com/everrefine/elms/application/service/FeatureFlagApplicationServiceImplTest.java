@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.everrefine.elms.application.dto.FeatureFlagDto;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
+import com.everrefine.elms.testsupport.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -35,15 +35,12 @@ class FeatureFlagApplicationServiceImplTest {
 
   @Autowired private FeatureFlagApplicationServiceImpl featureFlagApplicationService;
 
-  @Autowired private JdbcTemplate jdbcTemplate;
+  @Autowired private TestDataFactory testData;
 
   @BeforeEach
   void setUpFeatureFlags() {
-    jdbcTemplate.execute("DELETE FROM feature_flags");
-    jdbcTemplate.update(
-        "INSERT INTO feature_flags (key, enabled) VALUES (?, ?)", ENABLED_FEATURE_KEY, true);
-    jdbcTemplate.update(
-        "INSERT INTO feature_flags (key, enabled) VALUES (?, ?)", DISABLED_FEATURE_KEY, false);
+    testData.createFeatureFlag(ENABLED_FEATURE_KEY, true);
+    testData.createFeatureFlag(DISABLED_FEATURE_KEY, false);
   }
 
   @Nested
@@ -56,7 +53,7 @@ class FeatureFlagApplicationServiceImplTest {
           featureFlagApplicationService.findFeatureFlagByKey(DISABLED_FEATURE_KEY);
 
       // Assert
-      assertEquals(DISABLED_FEATURE_KEY, result.featureKey());
+      assertEquals(DISABLED_FEATURE_KEY, result.featureFlagKey());
       assertFalse(result.enabled());
     }
 

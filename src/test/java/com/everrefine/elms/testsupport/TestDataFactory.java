@@ -226,4 +226,22 @@ public class TestDataFactory {
         LocalDateTime.now(),
         LocalDateTime.now());
   }
+
+  /**
+   * フィーチャーフラグを作成する。
+   *
+   * @param key フィーチャーフラグのキー
+   * @param enabled フィーチャーフラグの有効状態
+   */
+  public void createFeatureFlag(String key, boolean enabled) {
+    jdbcTemplate.update(
+        """
+            INSERT INTO feature_flags (key, enabled, created_at, updated_at)
+            VALUES (?, ?, ?, ?)
+            """,
+        key,
+        enabled,
+        LocalDateTime.now(),
+        LocalDateTime.now());
+  }
 }

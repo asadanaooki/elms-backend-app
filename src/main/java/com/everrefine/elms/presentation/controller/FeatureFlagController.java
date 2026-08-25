@@ -25,7 +25,7 @@ public class FeatureFlagController {
   /**
    * 指定したキーに一致するフィーチャーフラグを取得する。
    *
-   * @param featureKey フィーチャーフラグのキー
+   * @param featureFlagKey フィーチャーフラグのキー
    * @return フィーチャーフラグDTO
    */
   @Operation(summary = "フィーチャーフラグ取得", description = "指定したキーに一致するフィーチャーフラグの有効状態を取得します")
@@ -37,8 +37,8 @@ public class FeatureFlagController {
     @ApiResponse(responseCode = "404", description = "フィーチャーフラグが見つかりません")
   })
   @PreAuthorize("hasAuthority('ADMIN')")
-  @GetMapping("/{featureKey}")
-  public FeatureFlagDto findFeatureFlagByKey(@PathVariable String featureKey) {
-    return featureFlagApplicationService.findFeatureFlagByKey(featureKey);
+  @GetMapping("/{featureFlagKey}")
+  public FeatureFlagDto findFeatureFlagByKey(@PathVariable String featureFlagKey) {
+    return featureFlagApplicationService.findFeatureFlagByKey(featureFlagKey);
   }
 }
