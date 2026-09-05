@@ -19,4 +19,9 @@ public class FeatureFlagRepositoryImpl implements FeatureFlagRepository {
   public Optional<FeatureFlag> findFeatureFlagByKey(String key) {
     return featureFlagDao.findById(key).map(FeatureFlagEntity::toDomain);
   }
+
+  @Override
+  public void updateFeatureFlag(FeatureFlag featureFlag) {
+    featureFlagDao.save(FeatureFlagEntity.from(featureFlag));
+  }
 }
