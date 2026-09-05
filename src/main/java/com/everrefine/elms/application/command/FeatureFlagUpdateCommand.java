@@ -4,7 +4,7 @@ import com.everrefine.elms.domain.model.featureflags.FeatureFlag;
 import jakarta.validation.constraints.NotNull;
 
 /** フィーチャーフラグ更新用のコマンド。 */
-public record FeatureFlagUpdateCommand(@NotNull String featureFlagKey, boolean enabled) {
+public record FeatureFlagUpdateCommand(String featureFlagKey, boolean enabled) {
 
   /**
    * 更新後のフィーチャーフラグに変換する。
