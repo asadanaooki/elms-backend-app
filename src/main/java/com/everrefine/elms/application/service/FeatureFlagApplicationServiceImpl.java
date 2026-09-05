@@ -1,5 +1,6 @@
 package com.everrefine.elms.application.service;
 
+import com.everrefine.elms.application.command.FeatureFlagUpdateCommand;
 import com.everrefine.elms.application.dto.FeatureFlagDto;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.featureflags.FeatureFlag;
@@ -23,5 +24,18 @@ public class FeatureFlagApplicationServiceImpl implements FeatureFlagApplication
             .findFeatureFlagByKey(key)
             .orElseThrow(() -> new ResourceNotFoundException(FeatureFlag.class, key));
     return FeatureFlagDto.from(featureFlag);
+  }
+
+  @Override
+  @Transactional
+  public void updateFeatureFlag(FeatureFlagUpdateCommand featureFlagUpdateCommand) {
+    FeatureFlag featureFlag =
+        featureFlagRepository
+            .findFeatureFlagByKey(featureFlagUpdateCommand.featureFlagKey())
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        FeatureFlag.class, featureFlagUpdateCommand.featureFlagKey()));
+    featureFlagRepository.updateFeatureFlag(featureFlagUpdateCommand.toFeatureFlag(featureFlag));
   }
 }

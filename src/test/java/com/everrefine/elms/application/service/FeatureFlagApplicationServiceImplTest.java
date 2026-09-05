@@ -3,7 +3,9 @@ package com.everrefine.elms.application.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.everrefine.elms.application.command.FeatureFlagUpdateCommand;
 import com.everrefine.elms.application.dto.FeatureFlagDto;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.testsupport.TestDataFactory;
@@ -67,6 +69,41 @@ class FeatureFlagApplicationServiceImplTest {
           assertThrows(
               ResourceNotFoundException.class,
               () -> featureFlagApplicationService.findFeatureFlagByKey(nonExistentKey));
+      assertEquals("FeatureFlag が見つかりませんでした。id = " + nonExistentKey, exception.getMessage());
+    }
+  }
+
+  @Nested
+  class フィーチャーフラグ更新 {
+
+    @Test
+    void 指定したキーが見つかると有効状態をfalseからtrueに更新できること() {
+      // Arrange
+      FeatureFlagDto beforeUpdate =
+          featureFlagApplicationService.findFeatureFlagByKey(DISABLED_FEATURE_KEY);
+      assertFalse(beforeUpdate.enabled());
+      FeatureFlagUpdateCommand command = new FeatureFlagUpdateCommand(DISABLED_FEATURE_KEY, true);
+
+      // Act
+      featureFlagApplicationService.updateFeatureFlag(command);
+
+      // Assert
+      FeatureFlagDto afterUpdate =
+          featureFlagApplicationService.findFeatureFlagByKey(DISABLED_FEATURE_KEY);
+      assertTrue(afterUpdate.enabled());
+    }
+
+    @Test
+    void 指定したキーが見つからないとResourceNotFoundExceptionが投げられること() {
+      // Arrange
+      String nonExistentKey = "UNKNOWN_FEATURE";
+      FeatureFlagUpdateCommand command = new FeatureFlagUpdateCommand(nonExistentKey, true);
+
+      // Act & Assert
+      ResourceNotFoundException exception =
+          assertThrows(
+              ResourceNotFoundException.class,
+              () -> featureFlagApplicationService.updateFeatureFlag(command));
       assertEquals("FeatureFlag が見つかりませんでした。id = " + nonExistentKey, exception.getMessage());
     }
   }

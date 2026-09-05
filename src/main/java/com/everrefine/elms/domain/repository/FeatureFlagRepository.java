@@ -13,4 +13,11 @@ public interface FeatureFlagRepository {
    * @return フィーチャーフラグ（存在しない場合は空）
    */
   Optional<FeatureFlag> findFeatureFlagByKey(String key);
+
+  /**
+   * フィーチャーフラグを更新する。
+   *
+   * @param featureFlag 更新するフィーチャーフラグ
+   */
+  void updateFeatureFlag(FeatureFlag featureFlag);
 }
