@@ -1,14 +1,28 @@
 package com.everrefine.elms.application.service;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.ThrowableProxy;
+import ch.qos.logback.core.read.ListAppender;
 import com.everrefine.elms.application.command.LoginHistoryCreateCommand;
 import com.everrefine.elms.application.command.PasswordUpdateCommand;
+import com.everrefine.elms.application.command.UserCreateCommand;
 import com.everrefine.elms.application.command.UserImportCommand;
 import com.everrefine.elms.application.command.UserSearchCommand;
 import com.everrefine.elms.application.dto.UserImportResponseDto;
@@ -16,6 +30,7 @@ import com.everrefine.elms.application.dto.UserPageDto;
 import com.everrefine.elms.application.exception.BadRequestException;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.user.User;
+import com.everrefine.elms.domain.model.user.UserRole;
 import com.everrefine.elms.domain.repository.UserRepository;
 import com.everrefine.elms.presentation.request.PasswordUpdateRequest;
 import com.everrefine.elms.testsupport.TestDataFactory;
@@ -30,17 +45,20 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mail.MailSendException;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -51,6 +69,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -73,6 +93,8 @@ class UserApplicationServiceImplTest {
   @Autowired private JdbcTemplate jdbcTemplate;
 
   @Autowired private UserRepository userRepository;
+
+  @MockitoBean private MailApplicationService mailApplicationService;
 
   @BeforeEach
   void deleteUsers() {
@@ -106,6 +128,130 @@ class UserApplicationServiceImplTest {
         userId,
         dateTime,
         dateTime);
+  }
+
+  @Nested
+  class ユーザー登録 {
+
+    private static final String WELCOME_FEATURE_KEY = "WELCOME_EMAIL";
+    private static final String EMAIL_ADDRESS = "welcome-user@example.com";
+
+    private Logger logger;
+    private ListAppender<ILoggingEvent> appender;
+    private UserCreateCommand command;
+
+    @BeforeEach
+    void setUp() {
+      // 外側のテスト用トランザクションをロールバックし、サービス自身のコミット後のDBを検証する。
+      TestTransaction.end();
+      deleteTestData();
+      command =
+          new UserCreateCommand(
+              null,
+              "登録 太郎",
+              "welcome-user",
+              EMAIL_ADDRESS,
+              "password123",
+              "password123",
+              "https://example.com/welcome-user.png",
+              UserRole.GENERAL);
+
+      logger = (Logger) LoggerFactory.getLogger(UserApplicationServiceImpl.class);
+      appender = new ListAppender<>();
+      appender.setContext(logger.getLoggerContext());
+      appender.start();
+      logger.addAppender(appender);
+    }
+
+    @AfterEach
+    void tearDown() {
+      logger.detachAppender(appender);
+      appender.stop();
+      deleteTestData();
+    }
+
+    @Test
+    void ウェルカムフラグが存在しない場合はユーザーを登録しメールを送信せずエラーログを出力すること() {
+      assertDoesNotThrow(() -> userApplicationService.createUser(command));
+
+      assertUserRegistered();
+      verifyNoInteractions(mailApplicationService);
+      ILoggingEvent event = assertErrorLog("ウェルカムメール用のフィーチャーフラグが存在しません。キー： WELCOME_EMAIL");
+      assertNull(event.getThrowableProxy());
+    }
+
+    @Test
+    void ウェルカムフラグが無効の場合はユーザーを登録しメールを送信しないこと() {
+      testData.createFeatureFlag(WELCOME_FEATURE_KEY, false);
+
+      assertDoesNotThrow(() -> userApplicationService.createUser(command));
+
+      assertUserRegistered();
+      verifyNoInteractions(mailApplicationService);
+      assertTrue(appender.list.isEmpty());
+    }
+
+    @Test
+    void ウェルカムメール送信に失敗してもユーザーを登録しユーザーIDと例外情報をログに記録すること() {
+      testData.createFeatureFlag(WELCOME_FEATURE_KEY, true);
+      MailSendException exception = new MailSendException("SMTP接続失敗");
+      doThrow(exception)
+          .when(mailApplicationService)
+          .sendWelcomeEmail(command.emailAddress(), command.userName());
+
+      assertDoesNotThrow(() -> userApplicationService.createUser(command));
+
+      UUID createdUserId = assertUserRegistered();
+      verify(mailApplicationService).sendWelcomeEmail(command.emailAddress(), command.userName());
+      verifyNoMoreInteractions(mailApplicationService);
+      ILoggingEvent event = assertErrorLog("ウェルカムメールの送信に失敗しました。ユーザーID： " + createdUserId);
+      ThrowableProxy throwable = assertInstanceOf(ThrowableProxy.class, event.getThrowableProxy());
+      assertSame(exception, throwable.getThrowable());
+      assertEquals(MailSendException.class.getName(), throwable.getClassName());
+      assertEquals("SMTP接続失敗", throwable.getMessage());
+    }
+
+    @Test
+    void ウェルカムフラグが有効の場合はユーザーを登録し登録したメールアドレスとユーザー名で一度だけ送信すること() {
+      testData.createFeatureFlag(WELCOME_FEATURE_KEY, true);
+
+      assertDoesNotThrow(() -> userApplicationService.createUser(command));
+
+      assertUserRegistered();
+      verify(mailApplicationService).sendWelcomeEmail(command.emailAddress(), command.userName());
+      verifyNoMoreInteractions(mailApplicationService);
+      assertTrue(appender.list.isEmpty());
+    }
+
+    private UUID assertUserRegistered() {
+      Map<String, Object> row =
+          jdbcTemplate.queryForMap("SELECT * FROM users WHERE email_address = ?", EMAIL_ADDRESS);
+      UUID userId = assertInstanceOf(UUID.class, row.get("id"));
+      assertEquals(command.realName(), row.get("real_name"));
+      assertEquals(command.userName(), row.get("user_name"));
+      assertEquals(command.emailAddress(), row.get("email_address"));
+      assertEquals(command.thumbnailUrl(), row.get("thumbnail_url"));
+      assertEquals(command.userRole().name(), row.get("user_role"));
+      String hashedPassword = (String) row.get("password");
+      assertNotEquals(command.password(), hashedPassword);
+      assertTrue(new BCryptPasswordEncoder().matches(command.password(), hashedPassword));
+      assertNotNull(row.get("created_at"));
+      assertNotNull(row.get("updated_at"));
+      return userId;
+    }
+
+    private ILoggingEvent assertErrorLog(String expectedMessage) {
+      assertEquals(1, appender.list.size());
+      ILoggingEvent event = appender.list.getFirst();
+      assertEquals(Level.ERROR, event.getLevel());
+      assertEquals(expectedMessage, event.getFormattedMessage());
+      return event;
+    }
+
+    private void deleteTestData() {
+      jdbcTemplate.update("DELETE FROM users WHERE email_address = ?", EMAIL_ADDRESS);
+      jdbcTemplate.update("DELETE FROM feature_flags WHERE key = ?", WELCOME_FEATURE_KEY);
+    }
   }
 
   @WithMockUser(username = "00000000-0000-0000-0000-000000000000")

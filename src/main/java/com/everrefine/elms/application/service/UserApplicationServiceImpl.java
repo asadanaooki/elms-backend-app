@@ -11,10 +11,12 @@ import com.everrefine.elms.application.dto.UserImportResponseDto;
 import com.everrefine.elms.application.dto.UserPageDto;
 import com.everrefine.elms.application.exception.BadRequestException;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
+import com.everrefine.elms.domain.model.featureflags.FeatureFlag;
 import com.everrefine.elms.domain.model.user.EmailAddress;
 import com.everrefine.elms.domain.model.user.ProgressRate;
 import com.everrefine.elms.domain.model.user.User;
 import com.everrefine.elms.domain.model.user.UserLoginHistory;
+import com.everrefine.elms.domain.repository.FeatureFlagRepository;
 import com.everrefine.elms.domain.repository.LessonRepository;
 import com.everrefine.elms.domain.repository.UserLessonRepository;
 import com.everrefine.elms.domain.repository.UserLoginHistoryRepository;
@@ -31,14 +33,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
+import org.springframework.mail.MailException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /** ユーザーアプリケーションサービスの実装。 */
 @Service
 @AllArgsConstructor
+@Slf4j
 public class UserApplicationServiceImpl implements UserApplicationService {
 
   private final UserRepository userRepository;
@@ -46,6 +51,9 @@ public class UserApplicationServiceImpl implements UserApplicationService {
   private final UserLessonRepository userLessonRepository;
   private final LessonRepository lessonRepository;
   private final UserDomainService userDomainService;
+  private final FeatureFlagRepository featureFlagRepository;
+  private final MailApplicationService mailApplicationService;
+  private static final String WELCOME_EMAIL_FLAG_KEY = "WELCOME_EMAIL";
 
   /**
    * CSV出力用に値をエスケープする。
@@ -131,8 +139,26 @@ public class UserApplicationServiceImpl implements UserApplicationService {
         userCreateCommand.password(), userCreateCommand.confirmPassword())) {
       throw new BadRequestException("パスワードの確認が一致しません");
     }
+    User createdUser = userRepository.createUser(userCreateCommand.toUser());
 
-    userRepository.createUser(userCreateCommand.toUser());
+    // ウェルカムメール関連処理
+    Optional<FeatureFlag> welcomeEmailFlagOpt =
+        featureFlagRepository.findFeatureFlagByKey(WELCOME_EMAIL_FLAG_KEY);
+    if (welcomeEmailFlagOpt.isEmpty()) {
+      log.error("ウェルカムメール用のフィーチャーフラグが存在しません。キー： {}", WELCOME_EMAIL_FLAG_KEY);
+      return;
+    }
+    FeatureFlag welcomeEmailFlag = welcomeEmailFlagOpt.get();
+    if (!welcomeEmailFlag.enabled()) {
+      return;
+    }
+
+    try {
+      mailApplicationService.sendWelcomeEmail(
+          createdUser.emailAddress().value(), createdUser.userName().value());
+    } catch (MailException e) {
+      log.error("ウェルカムメールの送信に失敗しました。ユーザーID： {}", createdUser.id(), e);
+    }
   }
 
   @Override

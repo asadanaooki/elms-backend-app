@@ -2,6 +2,7 @@ package com.everrefine.elms.application.service;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +80,19 @@ class MailApplicationServiceImplTest {
         Javaエンジニア養成講座
         """,
         message.getText());
+  }
+
+  @Test
+  void sendWelcomeEmailで宛先とユーザー名を埋め込んだアカウント作成案内メールを送信すること() {
+    String userName = "welcome-user";
+
+    mailApplicationService.sendWelcomeEmail(TO_ADDRESS, userName);
+
+    SimpleMailMessage message = captureSentMessage();
+    assertMessageHeader(message, "【Javaエンジニア養成講座】アカウント作成のお知らせ");
+    assertTrue(message.getText().contains("アカウントが作成されました。"));
+    assertTrue(message.getText().contains("ユーザー名：" + userName));
+    assertTrue(message.getText().contains("メールアドレス：" + TO_ADDRESS));
   }
 
   private SimpleMailMessage captureSentMessage() {
