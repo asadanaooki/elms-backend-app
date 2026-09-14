@@ -29,7 +29,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Transactional
 class FeatureFlagApplicationServiceImplTest {
 
-  private static final String ENABLED_FEATURE_KEY = "WELCOME_EMAIL";
   private static final String DISABLED_FEATURE_KEY = "NEW_UI";
 
   @Container @ServiceConnection
@@ -41,7 +40,6 @@ class FeatureFlagApplicationServiceImplTest {
 
   @BeforeEach
   void setUpFeatureFlags() {
-    testData.createFeatureFlag(ENABLED_FEATURE_KEY, true);
     testData.createFeatureFlag(DISABLED_FEATURE_KEY, false);
   }
 
