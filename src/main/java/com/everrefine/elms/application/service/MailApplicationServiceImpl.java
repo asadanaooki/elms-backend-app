@@ -31,6 +31,11 @@ public class MailApplicationServiceImpl implements MailApplicationService {
     sendMail(to, MailTemplate.PASSWORD_RESET, resetLink);
   }
 
+  @Override
+  public void sendWelcomeEmail(String to, String userName) {
+    sendMail(to, MailTemplate.WELCOME, userName, to);
+  }
+
   private void sendMail(String to, MailTemplate template, Object... args) {
     SimpleMailMessage message = new SimpleMailMessage();
     message.setFrom(fromAddress);

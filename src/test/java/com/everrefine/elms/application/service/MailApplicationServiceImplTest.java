@@ -81,6 +81,29 @@ class MailApplicationServiceImplTest {
         message.getText());
   }
 
+  @Test
+  void sendWelcomeEmailで宛先とユーザー名を埋め込んだアカウント作成案内メールを送信すること() {
+    String userName = "welcome-user";
+
+    mailApplicationService.sendWelcomeEmail(TO_ADDRESS, userName);
+
+    SimpleMailMessage message = captureSentMessage();
+    assertMessageHeader(message, "【Javaエンジニア養成講座】アカウント作成のお知らせ");
+    assertEquals(
+        """
+        Javaエンジニア養成講座をご利用いただきありがとうございます。
+
+        アカウントが作成されました。
+
+        ユーザー名：welcome-user
+        メールアドレス：user@example.com
+
+        ─────────────────────
+        Javaエンジニア養成講座
+        """,
+        message.getText());
+  }
+
   private SimpleMailMessage captureSentMessage() {
     ArgumentCaptor<SimpleMailMessage> messageCaptor =
         ArgumentCaptor.forClass(SimpleMailMessage.class);

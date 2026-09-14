@@ -34,7 +34,21 @@ public enum MailTemplate {
 
             ──────────────────────────────
             Javaエンジニア養成講座
-            """);
+            """),
+  WELCOME(
+      "【Javaエンジニア養成講座】アカウント作成のお知らせ",
+      """
+            Javaエンジニア養成講座をご利用いただきありがとうございます。
+
+            アカウントが作成されました。
+
+            ユーザー名：%s
+            メールアドレス：%s
+
+            ─────────────────────
+            Javaエンジニア養成講座
+            """),
+  ;
 
   private final String subject;
   private final String text;
