@@ -10,6 +10,7 @@ import com.everrefine.elms.application.dto.UserDto;
 import com.everrefine.elms.application.dto.UserImportResponseDto;
 import com.everrefine.elms.application.dto.UserPageDto;
 import com.everrefine.elms.application.exception.BadRequestException;
+import com.everrefine.elms.application.featureflag.FeatureFlagKey;
 import com.everrefine.elms.domain.exception.ResourceNotFoundException;
 import com.everrefine.elms.domain.model.featureflags.FeatureFlag;
 import com.everrefine.elms.domain.model.user.EmailAddress;
@@ -53,7 +54,6 @@ public class UserApplicationServiceImpl implements UserApplicationService {
   private final UserDomainService userDomainService;
   private final FeatureFlagRepository featureFlagRepository;
   private final MailApplicationService mailApplicationService;
-  private static final String WELCOME_EMAIL_FLAG_KEY = "WELCOME_EMAIL";
 
   /**
    * CSV出力用に値をエスケープする。
@@ -143,9 +143,9 @@ public class UserApplicationServiceImpl implements UserApplicationService {
 
     // ウェルカムメール関連処理
     Optional<FeatureFlag> welcomeEmailFlagOpt =
-        featureFlagRepository.findFeatureFlagByKey(WELCOME_EMAIL_FLAG_KEY);
+        featureFlagRepository.findFeatureFlagByKey(FeatureFlagKey.WELCOME_EMAIL.toString());
     if (welcomeEmailFlagOpt.isEmpty()) {
-      log.error("ウェルカムメール用のフィーチャーフラグが存在しません。キー： {}", WELCOME_EMAIL_FLAG_KEY);
+      log.error("ウェルカムメール用のフィーチャーフラグが存在しません。キー： {}", FeatureFlagKey.WELCOME_EMAIL.toString());
       return;
     }
     FeatureFlag welcomeEmailFlag = welcomeEmailFlagOpt.get();

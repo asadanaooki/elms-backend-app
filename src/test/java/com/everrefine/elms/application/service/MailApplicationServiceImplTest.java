@@ -2,7 +2,6 @@ package com.everrefine.elms.application.service;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -90,9 +89,19 @@ class MailApplicationServiceImplTest {
 
     SimpleMailMessage message = captureSentMessage();
     assertMessageHeader(message, "【Javaエンジニア養成講座】アカウント作成のお知らせ");
-    assertTrue(message.getText().contains("アカウントが作成されました。"));
-    assertTrue(message.getText().contains("ユーザー名：" + userName));
-    assertTrue(message.getText().contains("メールアドレス：" + TO_ADDRESS));
+    assertEquals(
+        """
+        Javaエンジニア養成講座をご利用いただきありがとうございます。
+
+        アカウントが作成されました。
+
+        ユーザー名：welcome-user
+        メールアドレス：user@example.com
+
+        ─────────────────────
+        Javaエンジニア養成講座
+        """,
+        message.getText());
   }
 
   private SimpleMailMessage captureSentMessage() {
